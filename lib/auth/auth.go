@@ -407,6 +407,12 @@ func NewServer(cfg *InitConfig, opts ...ServerOption) (as *Server, err error) {
 			return nil, trace.Wrap(err)
 		}
 	}
+	if cfg.GiteaConnectors == nil {
+		cfg.GiteaConnectors, err = local.NewGiteaConnectorService(cfg.Backend)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+	}
 	if cfg.ConnectionsDiagnostic == nil {
 		cfg.ConnectionsDiagnostic = local.NewConnectionsDiagnosticService(cfg.Backend)
 	}
@@ -732,6 +738,7 @@ func NewServer(cfg *InitConfig, opts ...ServerOption) (as *Server, err error) {
 		Notifications:                   cfg.Notifications,
 		AccessMonitoringRules:           cfg.AccessMonitoringRules,
 		CrownJewels:                     cfg.CrownJewels,
+		GiteaConnectors:                 cfg.GiteaConnectors,
 		BotInstance:                     cfg.BotInstance,
 		SPIFFEFederations:               cfg.SPIFFEFederations,
 		StaticHostUser:                  cfg.StaticHostUsers,
@@ -1550,6 +1557,10 @@ type Server struct {
 	// GithubUserAndTeamsOverride overrides the user and teams that would
 	// normally be fetched from the GitHub API. Used for testing.
 	GithubUserAndTeamsOverride func() (*GithubUserResponse, []GithubTeamResponse, error)
+
+	// GiteaUserAndTeamsOverride overrides the user and teams that would
+	// otherwise be fetched from Gitea during login. Used in tests.
+	GiteaUserAndTeamsOverride func() (*GiteaUserResponse, []GiteaTeamResponse, error)
 
 	// ObserveBrowserMFAChallengeExtensionsForTesting, if set, is called with the resolved
 	// challenge extensions when a BrowserMFARequestID is provided to

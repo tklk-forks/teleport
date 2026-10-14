@@ -1,0 +1,170 @@
+---
+title: Set up Single Sign-On with Gitea
+sidebar_label: Gitea
+description: Setting up Gitea SSO
+tags:
+ - sso
+ - how-to
+ - zero-trust
+ - privileged-access
+page_type: how-to
+---
+
+In this guide, you will set up Gitea Single Sign On (SSO) so you can
+automatically map teams in your Gitea organizations to users and roles in
+Teleport.
+
+## How it works
+
+A Teleport administrator creates a Gitea authentication connector on the
+Teleport Auth Service backend. The connector points at a self-hosted Gitea
+instance and at an OAuth2 application registered in it.
+
+When a user authenticates to Teleport, they are redirected to Gitea to approve
+the OAuth2 application. The Teleport Auth Service exchanges the authorization
+code for an access token, calls the Gitea REST API to read the user's login
+and team memberships, and maps those teams onto Teleport roles using the
+`teams_to_roles` section of the connector. The access token is used only for
+these calls during login and is then discarded; Teleport never refreshes it.
+Teleport then issues its own short-lived SSH and TLS certificates, or a web
+session, to the user.
+
+## Prerequisites
+
+- A running Teleport cluster.
+- A Gitea instance reachable from the Teleport Auth Service over HTTPS. The
+  Auth Service must be able to reach the `/login/oauth/access_token` and
+  `/api/v1` endpoints of the instance. Gitea must support granular OAuth2
+  scopes (`read:user` and `read:organization`).
+- At least one Gitea organization with teams. Teleport maps users to roles
+  through team membership only, so users without a team in a mapped
+  organization are denied access.
+- The `tctl` admin tool and `tsh` client tool.
+
+## Step 1/3. Create an OAuth2 application in Gitea
+
+1. In Gitea, open **Settings** → **Applications** (for a user-owned
+   application) or **Site Administration** → **Applications** (for an
+   instance-wide one) and create a new OAuth2 application.
+1. Set the **Redirect URI** to the Teleport Proxy Service callback:
+
+   ```text
+   https://<Var name="teleport.example.com"/>/v1/webapi/gitea/callback
+   ```
+
+   Replace <Var name="teleport.example.com"/> with the public address of your
+   Proxy Service, including the port if it is not 443.
+
+1. Leave **Confidential Client** enabled. Teleport authenticates to Gitea with
+   the client secret.
+1. Save the application and copy the generated **Client ID** and
+   **Client Secret**.
+
+## Step 2/3. Create a Gitea authentication connector
+
+Create a file called `gitea.yaml`:
+
+```yaml
+kind: gitea
+version: v1
+metadata:
+  name: gitea
+spec:
+  # Client ID and secret of the OAuth2 application created in Gitea.
+  client_id: <Var name="client-id"/>
+  client_secret: <Var name="client-secret"/>
+  # Must match the redirect URI registered with the OAuth2 application.
+  redirect_url: https://<Var name="teleport.example.com"/>/v1/webapi/gitea/callback
+  # Base URL of the Gitea instance.
+  endpoint_url: https://<Var name="gitea.example.com"/>
+  # Optional. Defaults to endpoint_url followed by /api/v1.
+  # api_endpoint_url: https://gitea.example.com/api/v1
+  # Shown on the Teleport login screen.
+  display: Gitea
+  # Map Gitea teams onto Teleport roles. Gitea teams have no slug, so the team
+  # name must match exactly, including case.
+  teams_to_roles:
+    - organization: <Var name="infra"/>
+      team: <Var name="Owners"/>
+      roles:
+        - access
+        - editor
+    - organization: <Var name="infra"/>
+      team: Developers
+      roles:
+        - access
+```
+
+Create the connector:
+
+```code
+$ tctl create -f gitea.yaml
+authentication connector "gitea" has been created
+```
+
+To update an existing connector, run `tctl create -f gitea.yaml --force`.
+
+The connector grants the following traits to users, which can be used in role
+templates and login rules:
+
+| Trait | Value |
+|-------|-------|
+| `logins` | The Gitea login name. |
+| `gitea_teams` | The names of all teams the user belongs to. |
+| `email` | The user's primary Gitea email, when Gitea returns one. |
+
+## Step 3/3. Log in
+
+Make Gitea the default authentication method by editing the cluster
+authentication preference:
+
+```yaml
+kind: cluster_auth_preference
+version: v2
+metadata:
+  name: cluster-auth-preference
+spec:
+  type: gitea
+  connector_name: gitea
+  # Keep multi-factor authentication requirements as needed.
+  second_factors: ["webauthn"]
+```
+
+```code
+$ tctl create -f cap.yaml
+```
+
+You can also log in through a specific connector without changing the default:
+
+```code
+$ tsh login --proxy=<Var name="teleport.example.com"/> --auth=gitea
+```
+
+Teleport opens a browser window to Gitea. After you approve the OAuth2
+application, Teleport issues your certificates and `tsh` prints your roles
+and logins.
+
+In the Web UI, a **Gitea** button appears on the login screen for every Gitea
+connector.
+
+## Troubleshooting
+
+- **`Gitea user has no Teleport-assigned roles`**: the user belongs to none of
+  the teams listed in `teams_to_roles`. Team names are matched exactly against
+  the names shown in Gitea, within the named organization.
+- **`list of user teams is empty, did you grant access?`**: the OAuth2
+  application was not granted the `read:organization` scope, or the user
+  belongs to no team at all.
+- **`bad response from Gitea API`**: the Auth Service cannot reach
+  `api_endpoint_url`, or the Gitea token scopes are not supported by your
+  Gitea version.
+
+Use `tctl get gitea` to inspect existing connectors and
+`tctl get gitea/gitea --with-secrets` to include the client secret.
+
+## Next steps
+
+- Learn how to use [login rules](../login-rules/login-rules.mdx) to transform
+  the traits Gitea provides before they are applied to roles.
+- Configure [multiple SSO providers](../multiple-providers.mdx) alongside
+  Gitea.

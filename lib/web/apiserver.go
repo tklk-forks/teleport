@@ -69,6 +69,7 @@ import (
 	"github.com/gravitational/teleport/api/client/webclient"
 	"github.com/gravitational/teleport/api/constants"
 	apidefaults "github.com/gravitational/teleport/api/defaults"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	linuxdesktopv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/linuxdesktop/v1"
 	mfav1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/mfa/v1"
 	notificationsv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/notifications/v1"
@@ -1077,6 +1078,11 @@ func (h *Handler) bindDefaultEndpoints() {
 	h.GET("/webapi/github/callback", h.WithMetaRedirect(h.githubCallback))
 	h.POST("/webapi/github/login/console", h.WithLimiter(h.githubLoginConsole))
 
+	// Gitea connector handlers
+	h.GET("/webapi/gitea/login/web", h.WithRedirect(h.giteaLoginWeb))
+	h.GET("/webapi/gitea/callback", h.WithMetaRedirect(h.giteaCallback))
+	h.POST("/webapi/gitea/login/console", h.WithLimiter(h.giteaLoginConsole))
+
 	// MFA public endpoints.
 	h.POST("/webapi/sites/:site/mfa/required", h.WithClusterAuth(h.isMFARequired))
 	h.POST("/webapi/mfa/login/begin", h.WithLimiter(h.mfaLoginBegin))
@@ -1804,6 +1810,23 @@ func getAuthSettings(ctx context.Context, authClient authclient.ClientI, m modul
 			}
 			as = githubSettings(githubConnectors[0], authPreference, m)
 		}
+	case constants.Gitea:
+		if authPreference.GetConnectorName() != "" {
+			giteaConnector, err := giteaConnectorGetter{client: authClient.GiteaConnectorClient()}.GetGiteaConnector(ctx, authPreference.GetConnectorName(), false)
+			if err != nil {
+				return webclient.AuthenticationSettings{}, trace.Wrap(err)
+			}
+			as = giteaSettings(giteaConnector, authPreference, m)
+		} else {
+			giteaConnectors, err := getGiteaConnectors(ctx, authClient)
+			if err != nil {
+				return webclient.AuthenticationSettings{}, trace.Wrap(err)
+			}
+			if len(giteaConnectors) == 0 {
+				return webclient.AuthenticationSettings{}, trace.BadParameter("no gitea connectors found")
+			}
+			as = giteaSettings(giteaConnectors[0], authPreference, m)
+		}
 	default:
 		return webclient.AuthenticationSettings{}, trace.BadParameter("unknown type %v", authPreference.GetType())
 	}
@@ -2053,6 +2076,20 @@ func (h *Handler) pingWithConnector(w http.ResponseWriter, r *http.Request, p ht
 		}
 	}
 
+	// look for gitea connector
+	giteaConnectors, err := getGiteaConnectors(r.Context(), authClient)
+	if err == nil {
+		for _, value := range giteaConnectors {
+			collectorNames = append(collectorNames, value.GetMetadata().GetName())
+			if value.GetMetadata().GetName() == connectorName {
+				response.Auth = giteaSettings(value, cap, h.cfg.Modules)
+				response.Auth.HasMessageOfTheDay = hasMessageOfTheDay
+				response.Auth.LoadAllCAs = loadAllCAs
+				return response, nil
+			}
+		}
+	}
+
 	return nil,
 		trace.BadParameter(
 			"invalid connector name: %v; valid options: %s",
@@ -2070,6 +2107,7 @@ func (h *Handler) getWebConfig(w http.ResponseWriter, r *http.Request, p httprou
 		oidcConnectors   []types.OIDCConnector
 		samlConnectors   []types.SAMLConnector
 		githubConnectors []types.GithubConnector
+		giteaConnectors  []*giteaconnectorv1.GiteaConnector
 		cap              types.AuthPreference
 		proxyConfig      *webclient.ProxySettings
 		recCfg           types.SessionRecordingConfig
@@ -2104,6 +2142,14 @@ func (h *Handler) getWebConfig(w http.ResponseWriter, r *http.Request, p httprou
 		githubConnectors, err = h.cfg.ProxyClient.GetGithubConnectors(r.Context(), false)
 		if err != nil {
 			h.logger.ErrorContext(r.Context(), "Cannot retrieve GitHub connectors", "error", err)
+		}
+	})
+
+	wg.Go(func() {
+		var err error
+		giteaConnectors, err = getGiteaConnectors(r.Context(), h.cfg.ProxyClient)
+		if err != nil {
+			h.logger.ErrorContext(r.Context(), "Cannot retrieve Gitea connectors", "error", err)
 		}
 	})
 
@@ -2215,6 +2261,13 @@ func (h *Handler) getWebConfig(w http.ResponseWriter, r *http.Request, p httprou
 			Name:        item.GetName(),
 			DisplayName: item.GetDisplay(),
 		})
+	}
+
+	for _, item := range giteaConnectors {
+		if item.GetSpec().GetUserMatchers() != nil {
+			identifierFirstLoginEnabled = true
+		}
+		authProviders = append(authProviders, giteaProvider(item))
 	}
 
 	// get auth type & second factor type
@@ -2387,8 +2440,27 @@ func (h *Handler) getUserMatchedAuthConnectors(w http.ResponseWriter, r *http.Re
 		return nil, trace.Wrap(err)
 	}
 
+	giteaConns, err := getGiteaConnectors(r.Context(), h.cfg.ProxyClient)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
 	var matchedConnectors []webclient.WebConfigAuthProvider
 	var fallbackConnectors []webclient.WebConfigAuthProvider
+
+	// Match Gitea connectors
+	for _, conn := range giteaConns {
+		if matches, isFallback, err := userMatchesConnector(req.Username, conn.GetSpec()); err != nil {
+			return nil, trace.Wrap(err)
+		} else if matches {
+			provider := giteaProvider(conn)
+			if isFallback {
+				fallbackConnectors = append(fallbackConnectors, provider)
+			} else {
+				matchedConnectors = append(matchedConnectors, provider)
+			}
+		}
+	}
 
 	// Match GitHub connectors
 	for _, conn := range githubConns {

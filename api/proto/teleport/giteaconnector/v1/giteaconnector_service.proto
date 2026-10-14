@@ -1,0 +1,110 @@
+// Copyright 2025 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package teleport.giteaconnector.v1;
+
+import "google/protobuf/empty.proto";
+import "teleport/giteaconnector/v1/giteaconnector.proto";
+
+option go_package = "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1;giteaconnectorv1";
+
+// GiteaConnectorService manages Gitea auth connectors and the OAuth2 auth
+// requests created while users log in through them.
+service GiteaConnectorService {
+  // CreateGiteaConnector creates a new Gitea connector.
+  rpc CreateGiteaConnector(CreateGiteaConnectorRequest) returns (GiteaConnector);
+  // GetGiteaConnector returns a Gitea connector by name.
+  rpc GetGiteaConnector(GetGiteaConnectorRequest) returns (GiteaConnector);
+  // ListGiteaConnectors returns a page of Gitea connectors.
+  rpc ListGiteaConnectors(ListGiteaConnectorsRequest) returns (ListGiteaConnectorsResponse);
+  // UpdateGiteaConnector updates an existing Gitea connector.
+  rpc UpdateGiteaConnector(UpdateGiteaConnectorRequest) returns (GiteaConnector);
+  // UpsertGiteaConnector creates or replaces a Gitea connector.
+  rpc UpsertGiteaConnector(UpsertGiteaConnectorRequest) returns (GiteaConnector);
+  // DeleteGiteaConnector deletes a Gitea connector by name.
+  rpc DeleteGiteaConnector(DeleteGiteaConnectorRequest) returns (google.protobuf.Empty);
+  // CreateGiteaAuthRequest starts a Gitea OAuth2 login flow and returns the
+  // request with the redirect URL populated.
+  rpc CreateGiteaAuthRequest(CreateGiteaAuthRequestRequest) returns (GiteaAuthRequest);
+  // GetGiteaAuthRequest returns a pending Gitea auth request by state token.
+  rpc GetGiteaAuthRequest(GetGiteaAuthRequestRequest) returns (GiteaAuthRequest);
+}
+
+// CreateGiteaConnectorRequest is a request to create a Gitea connector.
+message CreateGiteaConnectorRequest {
+  // connector is the connector to create.
+  GiteaConnector connector = 1;
+}
+
+// GetGiteaConnectorRequest is a request to get a Gitea connector.
+message GetGiteaConnectorRequest {
+  // name is the name of the connector to get.
+  string name = 1;
+  // with_secrets indicates whether the client secret should be included.
+  bool with_secrets = 2;
+}
+
+// ListGiteaConnectorsRequest is a request to list Gitea connectors.
+message ListGiteaConnectorsRequest {
+  // page_size is the maximum number of items to return. The server may impose
+  // a different page size at its discretion.
+  int32 page_size = 1;
+  // page_token is the next_page_token value returned from a previous List
+  // request, if any.
+  string page_token = 2;
+  // with_secrets indicates whether client secrets should be included.
+  bool with_secrets = 3;
+}
+
+// ListGiteaConnectorsResponse is a page of Gitea connectors.
+message ListGiteaConnectorsResponse {
+  // connectors is the page of connectors.
+  repeated GiteaConnector connectors = 1;
+  // next_page_token is the token to retrieve the next page of results, or
+  // empty if there are no more results.
+  string next_page_token = 2;
+}
+
+// UpdateGiteaConnectorRequest is a request to update a Gitea connector.
+message UpdateGiteaConnectorRequest {
+  // connector is the connector to update.
+  GiteaConnector connector = 1;
+}
+
+// UpsertGiteaConnectorRequest is a request to upsert a Gitea connector.
+message UpsertGiteaConnectorRequest {
+  // connector is the connector to upsert.
+  GiteaConnector connector = 1;
+}
+
+// DeleteGiteaConnectorRequest is a request to delete a Gitea connector.
+message DeleteGiteaConnectorRequest {
+  // name is the name of the connector to delete.
+  string name = 1;
+}
+
+// CreateGiteaAuthRequestRequest is a request to start a Gitea login flow.
+message CreateGiteaAuthRequestRequest {
+  // request is the auth request to create. state_token, redirect_url and
+  // expires are populated by the server.
+  GiteaAuthRequest request = 1;
+}
+
+// GetGiteaAuthRequestRequest is a request to fetch a pending auth request.
+message GetGiteaAuthRequestRequest {
+  // state_token identifies the auth request.
+  string state_token = 1;
+}

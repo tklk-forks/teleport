@@ -176,6 +176,8 @@ const (
 	LoginMethodSAML = "saml"
 	// LoginMethodGithub represents login with Github
 	LoginMethodGithub = "github"
+	// LoginMethodGitea represents login with Gitea
+	LoginMethodGitea = "gitea"
 	// LoginMethodHeadless represents headless login request
 	LoginMethodHeadless = "headless"
 
@@ -391,6 +393,13 @@ const (
 	GithubConnectorUpdatedEvent = "github.updated"
 	// GithubConnectorDeletedEvent fires when a Github connector is deleted.
 	GithubConnectorDeletedEvent = "github.deleted"
+
+	// GiteaConnectorCreatedEvent fires when a Gitea connector is created.
+	GiteaConnectorCreatedEvent = "gitea.created"
+	// GiteaConnectorUpdatedEvent fires when a Gitea connector is updated.
+	GiteaConnectorUpdatedEvent = "gitea.updated"
+	// GiteaConnectorDeletedEvent fires when a Gitea connector is deleted.
+	GiteaConnectorDeletedEvent = "gitea.deleted"
 	// OIDCConnectorCreatedEvent fires when OIDC connector is created.
 	OIDCConnectorCreatedEvent = "oidc.created"
 	// OIDCConnectorUpdatedEvent fires when OIDC connector is updated.

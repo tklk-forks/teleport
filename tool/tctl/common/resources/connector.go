@@ -38,9 +38,10 @@ func NewConnectorCollection(oidc []types.OIDCConnector, saml []types.SAMLConnect
 	}
 }
 
-// connectorCollection is a meta-collection over the SAML, OIDC, and GitHub connectors.
+// connectorCollection is a meta-collection over the SAML, OIDC, GitHub and
+// Gitea connectors.
 type connectorCollection struct {
-	oidc, saml, github Collection
+	oidc, saml, github, gitea Collection
 }
 
 func (c *connectorCollection) Resources() (r []types.Resource) {
@@ -52,6 +53,9 @@ func (c *connectorCollection) Resources() (r []types.Resource) {
 	}
 	if c.github != nil {
 		r = append(r, c.github.Resources()...)
+	}
+	if c.gitea != nil {
+		r = append(r, c.gitea.Resources()...)
 	}
 	return r
 }
@@ -87,6 +91,16 @@ func (c *connectorCollection) WriteText(w io.Writer, verbose bool) error {
 		}
 	}
 
+	if c.gitea != nil && len(c.gitea.Resources()) > 0 {
+		_, err := io.WriteString(w, "\nGitea:\n")
+		if err != nil {
+			return trace.Wrap(err)
+		}
+		if err := c.gitea.WriteText(w, verbose); err != nil {
+			return trace.Wrap(err)
+		}
+	}
+
 	return nil
 }
 
@@ -95,7 +109,7 @@ func connectorsHandler() Handler {
 		getHandler:  getConnectors,
 		singleton:   false,
 		mfaRequired: true,
-		description: "Meta resource listing GitHub, SAML, and OIDC connectors.",
+		description: "Meta resource listing GitHub, Gitea, SAML, and OIDC connectors.",
 	}
 }
 
@@ -109,8 +123,15 @@ func getConnectors(ctx context.Context, client *authclient.Client, ref services.
 	github, githubErr := getGithubConnector(ctx, client, ref, opts)
 	noGithub := githubErr != nil || len(github.Resources()) == 0
 
-	errs := []error{oidcErr, samlErr, githubErr}
-	allEmpty := noOIDC && noSAML && noGithub
+	gitea, giteaErr := getGiteaConnector(ctx, client, ref, opts)
+	if trace.IsNotImplemented(giteaErr) {
+		// Auth servers that predate the Gitea connector have none.
+		gitea, giteaErr = &giteaConnectorCollection{}, nil
+	}
+	noGitea := giteaErr != nil || len(gitea.Resources()) == 0
+
+	errs := []error{oidcErr, samlErr, githubErr, giteaErr}
+	allEmpty := noOIDC && noSAML && noGithub && noGitea
 
 	var unexpectedErrs []error
 	for _, err := range errs {
@@ -128,5 +149,6 @@ func getConnectors(ctx context.Context, client *authclient.Client, ref services.
 		saml:   saml,
 		oidc:   oidc,
 		github: github,
+		gitea:  gitea,
 	}, finalErr
 }

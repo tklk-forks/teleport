@@ -5432,6 +5432,20 @@ func (a *ServerWithRoles) ValidateGithubAuthCallback(ctx context.Context, q url.
 	return resp, nil
 }
 
+// ValidateGiteaAuthCallback validates the Gitea auth callback. Only the
+// proxy may obtain web sessions this way.
+func (a *ServerWithRoles) ValidateGiteaAuthCallback(ctx context.Context, q url.Values) (*authclient.GiteaAuthResponse, error) {
+	// The auth callback is its own authz, no need to check extra permissions.
+	resp, err := a.authServer.ValidateGiteaAuthCallback(ctx, q)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if resp.Session != nil && !a.hasBuiltinRole(types.RoleProxy) {
+		return nil, trace.AccessDenied("this request can be only executed by a proxy")
+	}
+	return resp, nil
+}
+
 // EmitAuditEvent emits a single audit event
 func (a *ScopedServerWithRoles) EmitAuditEvent(ctx context.Context, event apievents.AuditEvent) error {
 	ctx = context.WithoutCancel(ctx)

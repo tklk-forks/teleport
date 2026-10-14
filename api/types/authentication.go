@@ -757,7 +757,7 @@ func (c *AuthPreferenceV2) CheckAndSetDefaults() error {
 	}
 
 	switch c.Spec.Type {
-	case constants.Local, constants.OIDC, constants.SAML, constants.Github:
+	case constants.Local, constants.OIDC, constants.SAML, constants.Github, constants.Gitea:
 		// Note that "type:local" and "local_auth:false" is considered a valid
 		// setting, as it is a common idiom for clusters that rely on dynamic
 		// configuration.

@@ -439,6 +439,12 @@ const (
 	GithubConnectorDeletedCode = "T8001I"
 	// GithubConnectorUpdatedCode is the Github connector updated event code.
 	GithubConnectorUpdatedCode = "T80002I"
+	// GiteaConnectorCreatedCode is the Gitea connector created event code.
+	GiteaConnectorCreatedCode = "T8003I"
+	// GiteaConnectorDeletedCode is the Gitea connector deleted event code.
+	GiteaConnectorDeletedCode = "T8004I"
+	// GiteaConnectorUpdatedCode is the Gitea connector updated event code.
+	GiteaConnectorUpdatedCode = "T8005I"
 
 	// OIDCConnectorCreatedCode is the OIDC connector created event code.
 	OIDCConnectorCreatedCode = "T8100I"

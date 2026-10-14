@@ -121,6 +121,12 @@ const (
 	// KindGithubRequest is Github auth request resource
 	KindGithubRequest = "github_request"
 
+	// KindGitea is the Gitea auth connector resource.
+	KindGitea = "gitea"
+
+	// KindGiteaRequest is the Gitea auth request resource.
+	KindGiteaRequest = "gitea_request"
+
 	// KindSession is a recorded SSH session.
 	KindSession = "session"
 

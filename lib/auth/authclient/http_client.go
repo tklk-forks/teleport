@@ -567,3 +567,59 @@ func (c *HTTPClient) ValidateGithubAuthCallback(ctx context.Context, q url.Value
 	}
 	return &response, nil
 }
+
+type validateGiteaAuthCallbackReq struct {
+	// Query is the callback query string
+	Query url.Values `json:"query"`
+}
+
+// giteaAuthRawResponse is returned when the auth server validated callback
+// parameters returned from Gitea during the OAuth2 flow.
+type giteaAuthRawResponse struct {
+	Username      string                 `json:"username"`
+	Identity      types.ExternalIdentity `json:"identity"`
+	Session       json.RawMessage        `json:"session,omitempty"`
+	Cert          []byte                 `json:"cert,omitempty"`
+	TLSCert       []byte                 `json:"tls_cert,omitempty"`
+	Req           GiteaAuthRequest       `json:"req"`
+	HostSigners   []json.RawMessage      `json:"host_signers"`
+	ClientOptions ClientOptions          `json:"client_options"`
+}
+
+// ValidateGiteaAuthCallback validates the Gitea auth callback returned from
+// the redirect.
+func (c *HTTPClient) ValidateGiteaAuthCallback(ctx context.Context, q url.Values) (*GiteaAuthResponse, error) {
+	out, err := c.PostJSON(ctx, c.Endpoint("gitea", "requests", "validate"),
+		validateGiteaAuthCallbackReq{Query: q})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	var rawResponse giteaAuthRawResponse
+	if err := json.Unmarshal(out.Bytes(), &rawResponse); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	response := GiteaAuthResponse{
+		Username:      rawResponse.Username,
+		Identity:      rawResponse.Identity,
+		Cert:          rawResponse.Cert,
+		Req:           rawResponse.Req,
+		TLSCert:       rawResponse.TLSCert,
+		ClientOptions: rawResponse.ClientOptions,
+	}
+	if len(rawResponse.Session) != 0 {
+		session, err := services.UnmarshalWebSession(rawResponse.Session)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		response.Session = session
+	}
+	response.HostSigners = make([]types.CertAuthority, len(rawResponse.HostSigners))
+	for i, raw := range rawResponse.HostSigners {
+		ca, err := services.UnmarshalCertAuthority(raw)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		response.HostSigners[i] = ca
+	}
+	return &response, nil
+}

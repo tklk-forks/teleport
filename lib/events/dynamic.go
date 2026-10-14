@@ -171,6 +171,14 @@ func FromEventFields(fields EventFields) (events.AuditEvent, error) {
 		e = &events.GithubConnectorUpdate{}
 	case GithubConnectorDeletedEvent:
 		e = &events.GithubConnectorDelete{}
+	// Gitea connector events reuse the GitHub connector event payloads: the
+	// events carry only resource and user metadata, which are identical.
+	case GiteaConnectorCreatedEvent:
+		e = &events.GithubConnectorCreate{}
+	case GiteaConnectorUpdatedEvent:
+		e = &events.GithubConnectorUpdate{}
+	case GiteaConnectorDeletedEvent:
+		e = &events.GithubConnectorDelete{}
 	case OIDCConnectorCreatedEvent:
 		e = &events.OIDCConnectorCreate{}
 	case OIDCConnectorUpdatedEvent:

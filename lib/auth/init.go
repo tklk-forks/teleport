@@ -269,6 +269,9 @@ type InitConfig struct {
 	// CrownJewels is a service that manages CrownJewels.
 	CrownJewels services.CrownJewels
 
+	// GiteaConnectors is a service that manages Gitea auth connectors.
+	GiteaConnectors services.GiteaConnectors
+
 	// Integrations is a service that manages Integrations.
 	Integrations services.Integrations
 

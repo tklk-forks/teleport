@@ -66,6 +66,7 @@ import (
 	delegationv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/delegation/v1"
 	discoveryconfigv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/discoveryconfig/v1"
 	dynamicwindowsv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/dynamicwindows/v1"
+	giteaconnectorv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	gitserverv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/gitserver/v1"
 	grpcv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/grpcclientconfig/v1"
 	healthcheckconfigv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1"
@@ -116,6 +117,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth/delegation/delegationv1"
 	"github.com/gravitational/teleport/lib/auth/discoveryconfig/discoveryconfigv1"
 	"github.com/gravitational/teleport/lib/auth/dynamicwindows/dynamicwindowsv1"
+	"github.com/gravitational/teleport/lib/auth/gitea/giteav1"
 	"github.com/gravitational/teleport/lib/auth/gitserver/gitserverv1"
 	"github.com/gravitational/teleport/lib/auth/grpcclientconfig/grpcclientconfigv1"
 	"github.com/gravitational/teleport/lib/auth/healthcheckconfig/healthcheckconfigv1"
@@ -6590,6 +6592,18 @@ func NewGRPCServer(cfg GRPCServerConfig) (*GRPCServer, error) {
 		return nil, trace.Wrap(err)
 	}
 	crownjewelv1pb.RegisterCrownJewelServiceServer(server, crownJewel)
+
+	giteaConnectorService, err := giteav1.NewService(giteav1.ServiceConfig{
+		Authorizer: cfg.Authorizer,
+		Backend:    cfg.AuthServer.Services,
+		AuthServer: cfg.AuthServer,
+		Emitter:    cfg.Emitter,
+		Logger:     cfg.AuthServer.logger,
+	})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	giteaconnectorv1pb.RegisterGiteaConnectorServiceServer(server, giteaConnectorService)
 
 	// Initialize and register the user preferences service.
 	userPreferencesSrv, err := userpreferencesv1.NewService(&userpreferencesv1.ServiceConfig{

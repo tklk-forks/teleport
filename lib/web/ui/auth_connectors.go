@@ -49,6 +49,7 @@ var ValidConnectorTypes = []string{
 	constants.SAML,
 	constants.OIDC,
 	constants.Github,
+	constants.Gitea,
 	constants.LocalConnector,
 }
 

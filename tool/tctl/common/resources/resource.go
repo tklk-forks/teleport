@@ -67,6 +67,7 @@ func Handlers() map[string]Handler {
 		types.KindExternalAuditStorage:               externalAuditStorageHandler(),
 		types.KindGitServer:                          gitServerHandler(),
 		types.KindGithubConnector:                    githubConnectorHandler(),
+		types.KindGitea:                              giteaConnectorHandler(),
 		types.KindInferenceModel:                     inferenceModelHandler(),
 		types.KindInferencePolicy:                    inferencePolicyHandler(),
 		types.KindInferenceSecret:                    inferenceSecretHandler(),

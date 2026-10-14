@@ -284,6 +284,24 @@ export const formatters: Formatters = {
     format: ({ user, name }) =>
       `User [${user}] updated GitHub connector [${name}]`,
   },
+  [eventCodes.GITEA_CONNECTOR_CREATED]: {
+    type: 'gitea.created',
+    desc: 'Gitea Auth Connector Created',
+    format: ({ user, name }) =>
+      `User [${user}] created Gitea connector [${name}]`,
+  },
+  [eventCodes.GITEA_CONNECTOR_DELETED]: {
+    type: 'gitea.deleted',
+    desc: 'Gitea Auth Connector Deleted',
+    format: ({ user, name }) =>
+      `User [${user}] deleted Gitea connector [${name}]`,
+  },
+  [eventCodes.GITEA_CONNECTOR_UPDATED]: {
+    type: 'gitea.updated',
+    desc: 'Gitea Auth Connector Updated',
+    format: ({ user, name }) =>
+      `User [${user}] updated Gitea connector [${name}]`,
+  },
   [eventCodes.OIDC_CONNECTOR_CREATED]: {
     type: 'oidc.created',
     desc: 'OIDC Auth Connector Created',

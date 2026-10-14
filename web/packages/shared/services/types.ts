@@ -25,7 +25,7 @@ export type SSOType =
   | 'okta'
   | 'unknown';
 
-export type AuthProviderType = 'oidc' | 'saml' | 'github';
+export type AuthProviderType = 'oidc' | 'saml' | 'github' | 'gitea';
 
 export type Auth2faType = 'otp' | 'off' | 'optional' | 'on' | 'webauthn';
 

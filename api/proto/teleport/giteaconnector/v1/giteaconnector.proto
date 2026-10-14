@@ -1,0 +1,153 @@
+// Copyright 2025 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package teleport.giteaconnector.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "teleport/header/v1/metadata.proto";
+
+option go_package = "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1;giteaconnectorv1";
+
+// GiteaConnector is an auth connector that lets users authenticate to Teleport
+// through the OAuth2 provider built into a Gitea instance. Team memberships in
+// Gitea organizations are mapped onto Teleport roles.
+message GiteaConnector {
+  // The kind of resource represented. Always "gitea".
+  string kind = 1;
+  // Mandatory field for all resources. Not populated for this resource type.
+  string sub_kind = 2;
+  // The version of the resource being represented. Always "v1".
+  string version = 3;
+  // Common metadata that all resources share.
+  teleport.header.v1.Metadata metadata = 4;
+  // Spec is the Gitea connector specification.
+  GiteaConnectorSpec spec = 5;
+}
+
+// GiteaConnectorSpec is the specification of a Gitea connector.
+message GiteaConnectorSpec {
+  // client_id is the client ID of the OAuth2 application registered in Gitea.
+  string client_id = 1;
+  // client_secret is the client secret of the OAuth2 application registered in
+  // Gitea. It is never returned to clients unless secrets were explicitly
+  // requested.
+  string client_secret = 2;
+  // redirect_url is the authorization callback URL registered with the OAuth2
+  // application, typically https://<proxy>/v1/webapi/gitea/callback.
+  string redirect_url = 3;
+  // endpoint_url is the base URL of the Gitea instance, for example
+  // https://gitea.example.com. OAuth2 endpoints are resolved relative to it.
+  string endpoint_url = 4;
+  // api_endpoint_url is the base URL of the Gitea REST API. It defaults to
+  // endpoint_url followed by /api/v1.
+  string api_endpoint_url = 5;
+  // display is the connector display name shown on the login screen.
+  string display = 6;
+  // teams_to_roles maps Gitea organization team memberships onto Teleport
+  // roles.
+  repeated GiteaTeamRolesMapping teams_to_roles = 7;
+  // client_redirect_settings defines which client redirect URLs are allowed for
+  // non-browser SSO logins other than the standard localhost ones.
+  GiteaClientRedirectSettings client_redirect_settings = 8;
+  // user_matchers is a set of glob patterns to narrow down which username(s)
+  // this auth connector should match for identifier-first login.
+  repeated string user_matchers = 9;
+}
+
+// GiteaTeamRolesMapping maps a Gitea team to a set of Teleport roles.
+message GiteaTeamRolesMapping {
+  // organization is the name of the Gitea organization the team belongs to.
+  string organization = 1;
+  // team is the name of the team inside the organization. Gitea teams have no
+  // slug, so the exact team name is matched.
+  string team = 2;
+  // roles is the list of Teleport roles granted to members of the team.
+  repeated string roles = 3;
+}
+
+// GiteaClientRedirectSettings defines which client redirect URLs are allowed
+// for non-browser SSO logins other than the standard localhost ones.
+message GiteaClientRedirectSettings {
+  // allowed_https_hostnames is a list of hostnames allowed for HTTPS client
+  // redirect URLs. Each entry can be either a plain hostname or a glob pattern.
+  repeated string allowed_https_hostnames = 1;
+  // insecure_allowed_cidr_ranges is a list of CIDRs allowed for HTTP or HTTPS
+  // client redirect URLs.
+  repeated string insecure_allowed_cidr_ranges = 2;
+}
+
+// GiteaAuthRequest is the request to start a Gitea OAuth2 flow. It is stored
+// on the auth server for the duration of the flow, keyed by state_token.
+message GiteaAuthRequest {
+  // connector_id is the name of the connector to use.
+  string connector_id = 1;
+  // state_token is used to validate the callback.
+  string state_token = 2;
+  // csrf_token is used to protect against CSRF attacks on web logins.
+  string csrf_token = 3;
+  // ssh_public_key is an SSH public key the user wants as the subject of their
+  // SSH certificate, in SSH authorized_keys format.
+  bytes ssh_public_key = 4;
+  // tls_public_key is a TLS public key the user wants as the subject of their
+  // TLS certificate, in PEM-encoded PKCS#1 or PKIX format.
+  bytes tls_public_key = 5;
+  // cert_ttl is the TTL of the certificate the user wants to receive.
+  google.protobuf.Duration cert_ttl = 6;
+  // create_web_session indicates that a web session should be created after
+  // successful authentication.
+  bool create_web_session = 7;
+  // redirect_url is the URL the user is redirected to in order to authenticate
+  // with Gitea.
+  string redirect_url = 8;
+  // expires is the time after which the request is no longer valid.
+  google.protobuf.Timestamp expires = 9;
+  // client_redirect_url is the URL the client is redirected to after
+  // successful authentication.
+  string client_redirect_url = 10;
+  // compatibility specifies the OpenSSH compatibility flags.
+  string compatibility = 11;
+  // route_to_cluster is the name of the Teleport cluster to route the
+  // certificate to.
+  string route_to_cluster = 12;
+  // kubernetes_cluster is the name of the Kubernetes cluster to route the
+  // certificate to.
+  string kubernetes_cluster = 13;
+  // sso_test_flow indicates that this request is part of an SSO test flow
+  // started by tctl.
+  bool sso_test_flow = 14;
+  // connector_spec is an optional connector specification used in the SSO test
+  // flow and in the authenticated-user flow instead of a stored connector.
+  GiteaConnectorSpec connector_spec = 15;
+  // client_login_ip is the IP address of the client that started the login.
+  string client_login_ip = 16;
+  // client_user_agent is the user agent of the client that started the login.
+  string client_user_agent = 17;
+  // ssh_attestation_statement is an optional hardware key attestation
+  // statement for the SSH public key, serialized in the protobuf wire format
+  // of teleport.attestation.v1.AttestationStatement. It is carried as bytes
+  // because that message is generated with a different protobuf runtime.
+  bytes ssh_attestation_statement = 18;
+  // tls_attestation_statement is an optional hardware key attestation
+  // statement for the TLS public key, serialized in the protobuf wire format
+  // of teleport.attestation.v1.AttestationStatement.
+  bytes tls_attestation_statement = 19;
+  // authenticated_user is set when an already authenticated Teleport user is
+  // linking a Gitea identity rather than logging in.
+  string authenticated_user = 20;
+  // scope is the scope the login is pinned to, if any.
+  string scope = 21;
+}

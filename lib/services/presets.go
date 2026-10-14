@@ -164,6 +164,8 @@ func NewPresetEditorRole() types.Role {
 					types.NewRule(types.KindOIDCRequest, RW()),
 					types.NewRule(types.KindSAMLRequest, RW()),
 					types.NewRule(types.KindGithubRequest, RW()),
+					types.NewRule(types.KindGitea, RW()),
+					types.NewRule(types.KindGiteaRequest, RW()),
 					types.NewRule(types.KindClusterAuditConfig, RW()),
 					types.NewRule(types.KindClusterAuthPreference, RW()),
 					types.NewRule(types.KindAuthConnector, RW()),

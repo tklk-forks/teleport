@@ -463,6 +463,30 @@
           },
           {
             "resources": [
+              "gitea"
+            ],
+            "verbs": [
+              "list",
+              "create",
+              "read",
+              "update",
+              "delete"
+            ]
+          },
+          {
+            "resources": [
+              "gitea_request"
+            ],
+            "verbs": [
+              "list",
+              "create",
+              "read",
+              "update",
+              "delete"
+            ]
+          },
+          {
+            "resources": [
               "cluster_audit_config"
             ],
             "verbs": [

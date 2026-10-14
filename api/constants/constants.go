@@ -74,6 +74,9 @@ const (
 	// Github means authentication will happen remotely using a Github connector.
 	Github = "github"
 
+	// Gitea means authentication will happen remotely using a Gitea connector.
+	Gitea = "gitea"
+
 	// BrowserMFA is for CLI flows that delegate MFA to the browser.
 	BrowserMFA = "browser_mfa"
 

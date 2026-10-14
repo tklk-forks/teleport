@@ -3853,6 +3853,9 @@ func (tc *TeleportClient) getSSHLoginFunc(pr *webclient.PingResponse) (SSHLoginF
 	case constants.Github:
 		github := pr.Auth.Github
 		return tc.SSOLoginFn(github.Name, github.Display, constants.Github), nil
+	case constants.Gitea:
+		gitea := pr.Auth.Gitea
+		return tc.SSOLoginFn(gitea.Name, gitea.Display, constants.Gitea), nil
 	default:
 		return nil, trace.BadParameter("unsupported authentication type: %q", pr.Auth.Type)
 	}
@@ -3891,6 +3894,8 @@ func (tc *TeleportClient) getWebLoginFunc(pr *webclient.PingResponse) (WebLoginF
 	case constants.SAML:
 		return nil, trace.NotImplemented("SSO login not supported")
 	case constants.Github:
+		return nil, trace.NotImplemented("SSO login not supported")
+	case constants.Gitea:
 		return nil, trace.NotImplemented("SSO login not supported")
 	default:
 		return nil, trace.BadParameter("unsupported authentication type: %q", pr.Auth.Type)
@@ -4905,6 +4910,8 @@ func (tc *TeleportClient) applyAuthSettings(authSettings webclient.Authenticatio
 		ssoURL, err = url.Parse(authSettings.OIDC.IssuerURL)
 	case authSettings.Github != nil:
 		ssoURL, err = url.Parse(authSettings.Github.EndpointURL)
+	case authSettings.Gitea != nil:
+		ssoURL, err = url.Parse(authSettings.Gitea.EndpointURL)
 	}
 	if err != nil {
 		return trace.Wrap(err)

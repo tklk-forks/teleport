@@ -165,6 +165,8 @@ func ParseShortcut(in string) (string, error) {
 		return types.KindSAMLConnector, nil
 	case types.KindGithubConnector:
 		return types.KindGithubConnector, nil
+	case types.KindGitea, "gitea_connector", "gitea_connectors":
+		return types.KindGitea, nil
 	case types.KindConnectors, "connector":
 		return types.KindConnectors, nil
 	case types.KindUser, "users":

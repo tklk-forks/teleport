@@ -132,6 +132,9 @@ export const eventCodes = {
   GITHUB_CONNECTOR_CREATED: 'T8000I',
   GITHUB_CONNECTOR_DELETED: 'T8001I',
   GITHUB_CONNECTOR_UPDATED: 'T80002I', // extra 0 is intentional
+  GITEA_CONNECTOR_CREATED: 'T8003I',
+  GITEA_CONNECTOR_DELETED: 'T8004I',
+  GITEA_CONNECTOR_UPDATED: 'T8005I',
   KUBE_REQUEST: 'T3009I',
   KUBE_CREATED: 'T3010I',
   KUBE_UPDATED: 'T3011I',
@@ -498,6 +501,15 @@ export type RawEvents = {
   >;
   [eventCodes.GITHUB_CONNECTOR_UPDATED]: RawEventConnector<
     typeof eventCodes.GITHUB_CONNECTOR_UPDATED
+  >;
+  [eventCodes.GITEA_CONNECTOR_CREATED]: RawEventConnector<
+    typeof eventCodes.GITEA_CONNECTOR_CREATED
+  >;
+  [eventCodes.GITEA_CONNECTOR_DELETED]: RawEventConnector<
+    typeof eventCodes.GITEA_CONNECTOR_DELETED
+  >;
+  [eventCodes.GITEA_CONNECTOR_UPDATED]: RawEventConnector<
+    typeof eventCodes.GITEA_CONNECTOR_UPDATED
   >;
   [eventCodes.OIDC_CONNECTOR_CREATED]: RawEventConnector<
     typeof eventCodes.OIDC_CONNECTOR_CREATED

@@ -927,6 +927,8 @@ func roleSpecForProxy(clusterName string) types.RoleSpecV6 {
 				types.NewRule(types.KindSAML, services.ReadNoSecrets()),
 				types.NewRule(types.KindGithub, services.ReadNoSecrets()),
 				types.NewRule(types.KindGithubRequest, services.RW()),
+				types.NewRule(types.KindGitea, services.ReadNoSecrets()),
+				types.NewRule(types.KindGiteaRequest, services.RW()),
 				types.NewRule(types.KindNamespace, services.RO()),
 				types.NewRule(types.KindNode, services.RO()),
 				types.NewRule(types.KindAuthServer, services.RO()),

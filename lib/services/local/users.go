@@ -1518,8 +1518,8 @@ func (s *IdentityService) getSSOMFADevice(ctx context.Context, userCreatedByFn f
 		mfaConnector, err = s.GetSAMLConnectorWithValidationOptions(ctx, cb.Connector.ID, withSecrets, types.SAMLConnectorValidationFollowURLs(false))
 	case constants.OIDC:
 		mfaConnector, err = s.GetOIDCConnector(ctx, cb.Connector.ID, withSecrets)
-	case constants.Github:
-		// Github connectors do not support SSO MFA.
+	case constants.Github, constants.Gitea:
+		// Github and Gitea connectors do not support SSO MFA.
 		return nil, trace.NotFound("%s", ssoMFADisabledErr)
 	default:
 		return nil, trace.NotFound("user created by unknown auth connector type %v", cb.Connector.Type)
@@ -1973,7 +1973,7 @@ func (s *IdentityService) CreateSSODiagnosticInfo(ctx context.Context, authKind 
 	}
 
 	switch authKind {
-	case types.KindSAML, types.KindGithub, types.KindOIDC:
+	case types.KindSAML, types.KindGithub, types.KindOIDC, types.KindGitea:
 		// nothing to do
 	default:
 		return trace.BadParameter("unsupported authKind %q", authKind)

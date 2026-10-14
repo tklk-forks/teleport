@@ -156,6 +156,9 @@ func NewAPIServer(config *APIConfig) (http.Handler, error) {
 	// SSO validation handlers
 	srv.POST("/:version/github/requests/validate", srv.WithAuth(srv.validateGithubAuthCallback))
 
+	// Gitea connector
+	srv.POST("/:version/gitea/requests/validate", srv.WithAuth(srv.validateGiteaAuthCallback))
+
 	// Migrated/deleted endpoints with 501 Not Implemented handlers.
 	srv.POST("/:version/reversetunnels", httpMigratedHandler)
 	srv.GET("/:version/reversetunnels", httpMigratedHandler)

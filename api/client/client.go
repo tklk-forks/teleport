@@ -86,6 +86,7 @@ import (
 	discoveryconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/discoveryconfig/v1"
 	dynamicwindowsv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/dynamicwindows/v1"
 	externalauditstoragev1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/externalauditstorage/v1"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	gitserverpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/gitserver/v1"
 	healthcheckconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1"
 	integrationpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/integration/v1"
@@ -5913,6 +5914,14 @@ func (c *Client) DiscoveryConfigClient() *discoveryconfig.Client {
 // can use the wrapper without reaching for the raw gRPC client.
 func (c *Client) VnetConfigClient() *vnetconfig.Client {
 	return vnetconfig.NewClient(vnet.NewVnetConfigServiceClient(c.conn))
+}
+
+// GiteaConnectorClient returns a Gitea connector service client.
+// Clients connecting to older Teleport versions still get a client when
+// calling this method, but all RPCs will return "not implemented" errors
+// (as per the default gRPC behavior).
+func (c *Client) GiteaConnectorClient() giteaconnectorv1.GiteaConnectorServiceClient {
+	return giteaconnectorv1.NewGiteaConnectorServiceClient(c.conn)
 }
 
 // CrownJewelServiceClient returns a CrownJewel client.

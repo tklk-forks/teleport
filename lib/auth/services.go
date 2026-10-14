@@ -73,6 +73,7 @@ type Services struct {
 	services.KubeWaitingContainer
 	services.AccessMonitoringRules
 	services.CrownJewels
+	services.GiteaConnectors
 	services.BotInstance
 	services.AccessGraphSecretsGetter
 	services.DevicesGetter

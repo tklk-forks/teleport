@@ -40,6 +40,11 @@ const (
 	// WebConfigAuthProviderGitHubURL is GitHub webapi endpoint
 	// redirect_url MUST be the last query param, see the comment in parseSSORequestParams for an explanation.
 	WebConfigAuthProviderGitHubURL = "/v1/webapi/github/login/web?connector_id=:providerName&scope=:scope?&redirect_url=:redirect"
+	// WebConfigAuthProviderGiteaType is the Gitea provider type
+	WebConfigAuthProviderGiteaType = "gitea"
+	// WebConfigAuthProviderGiteaURL is the Gitea webapi endpoint
+	// redirect_url MUST be the last query param, see the comment in parseSSORequestParams for an explanation.
+	WebConfigAuthProviderGiteaURL = "/v1/webapi/gitea/login/web?connector_id=:providerName&scope=:scope?&redirect_url=:redirect"
 )
 
 // WebConfig is web application configuration served by the backend to be used in frontend apps.

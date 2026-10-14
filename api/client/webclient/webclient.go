@@ -624,6 +624,8 @@ type AuthenticationSettings struct {
 	SAML *SAMLSettings `json:"saml,omitempty"`
 	// Github contains Github connector settings needed for authentication.
 	Github *GithubSettings `json:"github,omitempty"`
+	// Gitea contains Gitea connector settings needed for authentication.
+	Gitea *GiteaSettings `json:"gitea,omitempty"`
 	// PrivateKeyPolicy contains the cluster-wide private key policy.
 	PrivateKeyPolicy keys.PrivateKeyPolicy `json:"private_key_policy"`
 	// PIVSlot specifies a specific PIV slot to use with hardware key support.
@@ -692,6 +694,16 @@ type OIDCSettings struct {
 
 // GithubSettings contains the Name and Display string for Github connector.
 type GithubSettings struct {
+	// Name is the internal name of the connector
+	Name string `json:"name"`
+	// Display is the connector display name
+	Display string `json:"display"`
+	// EndpointURL is the endpoint URL.
+	EndpointURL string
+}
+
+// GiteaSettings contains the Name and Display string for a Gitea connector.
+type GiteaSettings struct {
 	// Name is the internal name of the connector
 	Name string `json:"name"`
 	// Display is the connector display name

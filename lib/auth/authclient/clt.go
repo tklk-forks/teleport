@@ -49,6 +49,7 @@ import (
 	dbobjectimportrulev1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/dbobjectimportrule/v1"
 	delegationv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/delegation/v1"
 	devicepb "github.com/gravitational/teleport/api/gen/proto/go/teleport/devicetrust/v1"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	integrationv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/integration/v1"
 	inventoryv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/inventory/v1"
 	linuxdesktopv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/linuxdesktop/v1"
@@ -1030,6 +1031,49 @@ type GithubAuthRequest struct {
 	ClientRedirectURL string `json:"client_redirect_url"`
 }
 
+// GiteaAuthResponse represents the Gitea auth callback validation response.
+type GiteaAuthResponse struct {
+	// Username is the name of the authenticated user.
+	Username string `json:"username"`
+	// Identity is the external identity.
+	Identity types.ExternalIdentity `json:"identity"`
+	// Session is the created web session.
+	Session types.WebSession `json:"session,omitempty"`
+	// Cert is the generated SSH client certificate.
+	Cert []byte `json:"cert,omitempty"`
+	// TLSCert is the PEM encoded TLS client certificate.
+	TLSCert []byte `json:"tls_cert,omitempty"`
+	// Req is the original auth request.
+	Req GiteaAuthRequest `json:"req"`
+	// HostSigners is a list of signing host public keys trusted by the
+	// proxy, used in console login.
+	HostSigners []types.CertAuthority `json:"host_signers"`
+	// ClientOptions contains some options that the cluster wants the client
+	// to use.
+	ClientOptions ClientOptions `json:"client_options"`
+}
+
+// GiteaAuthRequest is a Gitea auth request that supports standard JSON
+// marshaling.
+type GiteaAuthRequest struct {
+	// ConnectorID is the name of the connector to use.
+	ConnectorID string `json:"connector_id"`
+	// CSRFToken is used to protect against CSRF attacks.
+	CSRFToken string `json:"csrf_token"`
+	// SSHPubKey is an SSH public key the user wants as the subject of their
+	// SSH certificate. It must be in SSH authorized_keys format.
+	SSHPubKey []byte `json:"ssh_pub_key,omitempty"`
+	// TLSPubKey is a TLS public key the user wants as the subject of their
+	// TLS certificate. It must be in PEM-encoded PKCS#1 or PKIX format.
+	TLSPubKey []byte `json:"tls_pub_key,omitempty"`
+	// CreateWebSession indicates that a user wants to generate a web session
+	// after successful authentication.
+	CreateWebSession bool `json:"create_web_session"`
+	// ClientRedirectURL is the URL where the client will be redirected after
+	// successful auth.
+	ClientRedirectURL string `json:"client_redirect_url"`
+}
+
 // IdentityService manages identities and users
 type IdentityService interface {
 	// CreateOIDCConnector creates a new OIDC connector.
@@ -1883,6 +1927,12 @@ type ClientI interface {
 
 	// CrownJewelServiceClient returns a Crown Jewel service client.
 	CrownJewelServiceClient() *crownjewel.Client
+
+	// GiteaConnectorClient returns a Gitea connector service client.
+	GiteaConnectorClient() giteaconnectorv1.GiteaConnectorServiceClient
+
+	// ValidateGiteaAuthCallback validates a Gitea auth callback.
+	ValidateGiteaAuthCallback(ctx context.Context, q url.Values) (*GiteaAuthResponse, error)
 
 	// ResourceUsageClient returns a resource usage service client.
 	// Clients connecting to non-Enterprise clusters, or older Teleport versions,
