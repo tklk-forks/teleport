@@ -50,7 +50,7 @@ func giteaSettings(connector *giteaconnectorv1.GiteaConnector, cap types.AuthPre
 		Gitea: &webclient.GiteaSettings{
 			Name:        connector.GetMetadata().GetName(),
 			Display:     connector.GetSpec().GetDisplay(),
-			EndpointURL: connector.GetSpec().GetEndpointUrl(),
+			EndpointURL: services.GiteaEndpointURL(connector.GetSpec()),
 		},
 		// Local fallback / MFA.
 		SecondFactor:            types.LegacySecondFactorFromSecondFactors(cap.GetSecondFactors()),
@@ -63,36 +63,10 @@ func giteaSettings(connector *giteaconnectorv1.GiteaConnector, cap types.AuthPre
 	}
 }
 
-// giteaConnectorGetter adapts the gRPC client to the services getter used to
-// collect every connector.
-type giteaConnectorGetter struct {
-	client giteaconnectorv1.GiteaConnectorServiceClient
-}
-
-func (g giteaConnectorGetter) GetGiteaConnector(ctx context.Context, name string, withSecrets bool) (*giteaconnectorv1.GiteaConnector, error) {
-	connector, err := g.client.GetGiteaConnector(ctx, giteaconnectorv1.GetGiteaConnectorRequest_builder{
-		Name:        name,
-		WithSecrets: withSecrets,
-	}.Build())
-	return connector, trace.Wrap(err)
-}
-
-func (g giteaConnectorGetter) ListGiteaConnectors(ctx context.Context, pageSize int, pageToken string, withSecrets bool) ([]*giteaconnectorv1.GiteaConnector, string, error) {
-	resp, err := g.client.ListGiteaConnectors(ctx, giteaconnectorv1.ListGiteaConnectorsRequest_builder{
-		PageSize:    int32(pageSize),
-		PageToken:   pageToken,
-		WithSecrets: withSecrets,
-	}.Build())
-	if err != nil {
-		return nil, "", trace.Wrap(err)
-	}
-	return resp.GetConnectors(), resp.GetNextPageToken(), nil
-}
-
 // getGiteaConnectors returns every Gitea connector, without secrets. Clusters
 // whose auth server predates the Gitea connector return an empty list.
 func getGiteaConnectors(ctx context.Context, clt authclient.ClientI) ([]*giteaconnectorv1.GiteaConnector, error) {
-	connectors, err := services.GetAllGiteaConnectors(ctx, giteaConnectorGetter{client: clt.GiteaConnectorClient()}, false)
+	connectors, err := services.GetAllGiteaConnectors(ctx, clt.GiteaConnectorServiceClient(), false)
 	if err != nil {
 		if trace.IsNotImplemented(err) {
 			return nil, nil

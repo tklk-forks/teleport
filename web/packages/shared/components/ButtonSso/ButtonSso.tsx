@@ -49,6 +49,8 @@ export function SSOIcon({ type }: { type: SSOType }) {
       return <ResourceIcon name="microsoft" {...commonResourceIconProps} />;
     case 'github':
       return <ResourceIcon name="github" {...commonResourceIconProps} />;
+    case 'gitea':
+      return <ResourceIcon name="gitea" {...commonResourceIconProps} />;
     case 'bitbucket':
       return (
         <ResourceIcon name="atlassianbitbucket" {...commonResourceIconProps} />
@@ -79,6 +81,10 @@ export function guessProviderType(
 
   if (name.indexOf('google') !== -1) {
     return 'google';
+  }
+
+  if (name.indexOf('gitea') !== -1 || providerType === 'gitea') {
+    return 'gitea';
   }
 
   if (name.indexOf('github') !== -1 || providerType === 'github') {

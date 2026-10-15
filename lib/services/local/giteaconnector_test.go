@@ -77,7 +77,7 @@ func TestGiteaConnectorCRUD(t *testing.T) {
 	created, err := service.CreateGiteaConnector(ctx, newGiteaConnector("gitea"))
 	require.NoError(t, err)
 	require.NotEmpty(t, created.GetMetadata().GetRevision())
-	require.Equal(t, "https://gitea.example.com/api/v1", created.GetSpec().GetApiEndpointUrl(), "validation defaults are applied on write")
+	require.Empty(t, created.GetSpec().GetApiEndpointUrl(), "the stored spec is not rewritten")
 
 	_, err = service.CreateGiteaConnector(ctx, newGiteaConnector("gitea"))
 	require.Error(t, err, "duplicate create must fail")

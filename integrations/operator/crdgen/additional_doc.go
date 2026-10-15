@@ -26,6 +26,9 @@ var additionalDescription = map[string]map[string]string{
 	"GithubConnectorSpecV3": {
 		"ClientSecret": supportsSecretLookupDescription,
 	},
+	"GiteaConnectorSpec": {
+		"client_secret": supportsSecretLookupDescription,
+	},
 	"OIDCConnectorSpecV3": {
 		"ClientSecret": supportsSecretLookupDescription,
 	},

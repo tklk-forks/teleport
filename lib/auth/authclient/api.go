@@ -1459,6 +1459,9 @@ type Cache interface {
 	// GetCrownJewel returns the specified crown jewel.
 	GetCrownJewel(ctx context.Context, name string) (*crownjewelv1.CrownJewel, error)
 
+	// GiteaConnectorsGetter defines read/list methods for Gitea connectors.
+	services.GiteaConnectorsGetter
+
 	// IntegrationsGetter defines read/list methods for integrations.
 	services.IntegrationsGetter
 

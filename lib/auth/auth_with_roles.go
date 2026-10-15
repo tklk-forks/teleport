@@ -1257,6 +1257,14 @@ func (a *ServerWithRoles) hasWatchPermissionForKind(
 		if filter.User != "" && !kind.LoadSecrets && a.currentUserAction(filter.User) == nil {
 			return nil
 		}
+	case types.KindGitea:
+		// Gitea connector secrets are only served through the API, which
+		// enforces admin-action MFA. The auth server's own cache watches the
+		// backend directly and is not affected.
+		if kind.LoadSecrets {
+			return trace.AccessDenied("watching %q resources with secrets is not allowed", kind.Kind)
+		}
+		verb = types.VerbReadNoSecrets
 	case types.KindHeadlessAuthentication:
 		var filter types.HeadlessAuthenticationFilter
 		if err := filter.FromMap(kind.Filter); err != nil {
@@ -1329,7 +1337,7 @@ func (a *ScopedServerWithRoles) authorizeWatchKind(ctx context.Context, kind typ
 	// do a pre-check for kinds that have exceptional behavior we haven't integrated into the unified
 	// scoped authz path yet.
 	switch kind.Kind {
-	case types.KindAccessRequest, types.KindWebSession, types.KindHeadlessAuthentication:
+	case types.KindAccessRequest, types.KindWebSession, types.KindHeadlessAuthentication, types.KindGitea:
 		switch kind.ScopeFilter.ToProto().GetMode() {
 		case scopesv1.Mode_MODE_UNSPECIFIED, scopesv1.Mode_MODE_UNSCOPED, scopesv1.Mode_MODE_ALL:
 			// all equivalent to the unscoped subset for these kinds
@@ -5192,6 +5200,8 @@ func (a *ServerWithRoles) GetSSODiagnosticInfo(ctx context.Context, authKind str
 		resource = types.KindSAMLRequest
 	case types.KindGithub:
 		resource = types.KindGithubRequest
+	case types.KindGitea:
+		resource = types.KindGiteaRequest
 	case types.KindOIDC:
 		resource = types.KindOIDCRequest
 	default:

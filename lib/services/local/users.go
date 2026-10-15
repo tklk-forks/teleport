@@ -2003,7 +2003,7 @@ func (s *IdentityService) GetSSODiagnosticInfo(ctx context.Context, authKind str
 	}
 
 	switch authKind {
-	case types.KindSAML, types.KindGithub, types.KindOIDC:
+	case types.KindSAML, types.KindGithub, types.KindOIDC, types.KindGitea:
 		// nothing to do
 	default:
 		return nil, trace.BadParameter("unsupported authKind %q", authKind)

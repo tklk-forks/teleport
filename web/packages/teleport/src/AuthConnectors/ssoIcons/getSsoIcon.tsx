@@ -38,6 +38,12 @@ export default function getSsoIcon(
           <ResourceIcon name="github" width="61px" />
         </Flex>
       );
+    case 'gitea':
+      return () => (
+        <Flex height="61px" alignItems="center" justifyContent="center">
+          <ResourceIcon name="gitea" width="61px" />
+        </Flex>
+      );
     case 'saml':
       return () => (
         <MultiIconContainer>

@@ -139,6 +139,13 @@ gen-tfschema:
 		-I=../../api/proto \
 		-I=$(PROTOBUF_MOD_PATH) \
 		--plugin=$(PROTOC_GEN_TERRAFORM) \
+		--terraform_out=config=protoc-gen-terraform-giteaconnector.yaml:./tfschema \
+		teleport/giteaconnector/v1/giteaconnector.proto
+
+	@protoc \
+		-I=../../api/proto \
+		-I=$(PROTOBUF_MOD_PATH) \
+		--plugin=$(PROTOC_GEN_TERRAFORM) \
 		--terraform_out=config=protoc-gen-terraform-discoveryconfig.yaml:./tfschema \
 		teleport/discoveryconfig/v1/discoveryconfig.proto
 
@@ -205,6 +212,7 @@ gen-tfschema:
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/workloadidentity/v1/resource_terraform.go ./tfschema/workloadidentity/v1/
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/autoupdate/v1/autoupdate_terraform.go ./tfschema/autoupdate/v1/
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1/health_check_config_terraform.go ./tfschema/healthcheckconfig/v1/
+	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1/giteaconnector_terraform.go ./tfschema/giteaconnector/v1/
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/discoveryconfig/v1/discoveryconfig_terraform.go ./tfschema/discoveryconfig/v1/
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/summarizer/v1/summarizer_terraform.go ./tfschema/summarizer/v1/
 	mv ./tfschema/github.com/gravitational/teleport/api/gen/proto/go/teleport/vnet/v1/vnet_config_terraform.go ./tfschema/vnet/v1/

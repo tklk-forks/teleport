@@ -21,11 +21,13 @@ import { screen } from '@testing-library/react';
 import { render } from 'design/utils/testing';
 
 import ButtonSso from '.';
+import { guessProviderType } from './ButtonSso';
 
 test.each`
   ssoType        | expectedIcon
   ${'Microsoft'} | ${'res-icon-microsoft'}
   ${'github'}    | ${'res-icon-github'}
+  ${'gitea'}     | ${'res-icon-gitea'}
   ${'bitbucket'} | ${'res-icon-atlassianbitbucket'}
   ${'google'}    | ${'res-icon-google'}
 `('rendering of $ssoType', ({ ssoType, expectedIcon }) => {
@@ -34,6 +36,18 @@ test.each`
   expect(screen.getByRole('img')).toHaveAttribute('data-testid', expectedIcon);
   expect(screen.getByText(/hello/i)).toBeInTheDocument();
 });
+
+test.each`
+  displayName         | providerType | expected
+  ${'Sign in'}        | ${'gitea'}   | ${'gitea'}
+  ${'Company Gitea'}  | ${'oidc'}    | ${'gitea'}
+  ${'Company GitHub'} | ${'github'}  | ${'github'}
+`(
+  'guessProviderType($displayName, $providerType) is $expected',
+  ({ displayName, providerType, expected }) => {
+    expect(guessProviderType(displayName, providerType)).toBe(expected);
+  }
+);
 
 test('rendering unknown SSO type', () => {
   render(<ButtonSso ssoType="unknown" title="hello" />);

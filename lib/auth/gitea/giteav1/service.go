@@ -49,6 +49,8 @@ type ServiceConfig struct {
 	Authorizer authz.Authorizer
 	// Backend stores Gitea connectors.
 	Backend services.GiteaConnectors
+	// Reader serves connector reads, typically from the auth cache.
+	Reader services.GiteaConnectorsGetter
 	// AuthServer drives login flows.
 	AuthServer AuthServer
 	// Emitter emits audit events.
@@ -64,6 +66,9 @@ func (c *ServiceConfig) CheckAndSetDefaults() error {
 	}
 	if c.Backend == nil {
 		return trace.BadParameter("backend is required")
+	}
+	if c.Reader == nil {
+		return trace.BadParameter("reader is required")
 	}
 	if c.AuthServer == nil {
 		return trace.BadParameter("auth server is required")
@@ -83,6 +88,7 @@ type Service struct {
 
 	authorizer authz.Authorizer
 	backend    services.GiteaConnectors
+	reader     services.GiteaConnectorsGetter
 	authServer AuthServer
 	emitter    apievents.Emitter
 	logger     *slog.Logger
@@ -96,10 +102,23 @@ func NewService(cfg ServiceConfig) (*Service, error) {
 	return &Service{
 		authorizer: cfg.Authorizer,
 		backend:    cfg.Backend,
+		reader:     cfg.Reader,
 		authServer: cfg.AuthServer,
 		emitter:    cfg.Emitter,
 		logger:     cfg.Logger,
 	}, nil
+}
+
+// checkConnectorAccess checks access to Gitea connectors. Like the other
+// auth connectors, access is also granted through the umbrella
+// auth_connector kind.
+func checkConnectorAccess(authCtx *authz.Context, verb string, additionalVerbs ...string) error {
+	if err := authCtx.CheckAccessToKind(types.KindGitea, verb, additionalVerbs...); err != nil {
+		if errUmbrella := authCtx.CheckAccessToKind(types.KindAuthConnector, verb, additionalVerbs...); errUmbrella != nil {
+			return trace.Wrap(err)
+		}
+	}
+	return nil
 }
 
 // authorizeWrite authorizes a mutating connector operation. Connector writes
@@ -110,7 +129,7 @@ func (s *Service) authorizeWrite(ctx context.Context, verbs ...string) (*authz.C
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	if err := authCtx.CheckAccessToKind(types.KindGitea, verbs[0], verbs[1:]...); err != nil {
+	if err := checkConnectorAccess(authCtx, verbs[0], verbs[1:]...); err != nil {
 		return nil, trace.Wrap(err)
 	}
 	if err := authCtx.AuthorizeAdminAction(); err != nil {
@@ -126,11 +145,11 @@ func (s *Service) authorizeRead(ctx context.Context, withSecrets bool) (*authz.C
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	if err := authCtx.CheckAccessToKind(types.KindGitea, types.VerbReadNoSecrets); err != nil {
+	if err := checkConnectorAccess(authCtx, types.VerbReadNoSecrets); err != nil {
 		return nil, trace.Wrap(err)
 	}
 	if withSecrets {
-		if err := authCtx.CheckAccessToKind(types.KindGitea, types.VerbRead); err != nil {
+		if err := checkConnectorAccess(authCtx, types.VerbRead); err != nil {
 			return nil, trace.Wrap(err)
 		}
 		if err := authCtx.AuthorizeAdminActionAllowReusedMFA(); err != nil {
@@ -213,7 +232,7 @@ func (s *Service) GetGiteaConnector(ctx context.Context, req *giteaconnectorv1.G
 	if _, err := s.authorizeRead(ctx, req.GetWithSecrets()); err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connector, err := s.backend.GetGiteaConnector(ctx, req.GetName(), req.GetWithSecrets())
+	connector, err := s.reader.GetGiteaConnector(ctx, req.GetName(), req.GetWithSecrets())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -225,7 +244,7 @@ func (s *Service) ListGiteaConnectors(ctx context.Context, req *giteaconnectorv1
 	if _, err := s.authorizeRead(ctx, req.GetWithSecrets()); err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connectors, next, err := s.backend.ListGiteaConnectors(ctx, int(req.GetPageSize()), req.GetPageToken(), req.GetWithSecrets())
+	connectors, next, err := s.reader.ListGiteaConnectors(ctx, int(req.GetPageSize()), req.GetPageToken(), req.GetWithSecrets())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -254,7 +273,7 @@ func (s *Service) CreateGiteaAuthRequest(ctx context.Context, req *giteaconnecto
 	// The SSO test flow carries an arbitrary connector spec, so it requires
 	// the permission to create connectors.
 	if authReq.GetSsoTestFlow() {
-		if err := authCtx.CheckAccessToKind(types.KindGitea, types.VerbCreate); err != nil {
+		if err := checkConnectorAccess(authCtx, types.VerbCreate); err != nil {
 			return nil, trace.Wrap(err)
 		}
 	}

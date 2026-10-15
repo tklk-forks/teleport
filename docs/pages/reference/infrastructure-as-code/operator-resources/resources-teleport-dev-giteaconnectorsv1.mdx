@@ -1,0 +1,57 @@
+---
+title: TeleportGiteaConnectorV1
+description: Provides a comprehensive list of fields in the TeleportGiteaConnectorV1 resource available through the Teleport Kubernetes operator
+page_type: reference
+---
+
+{/*Auto-generated file. Do not edit.*/}
+{/*To regenerate, navigate to integrations/operator and run "make crd-docs".*/}
+
+{/* Disable the outdated name check since custom resource fields occasionally
+need to refer to these. */}
+{/* vale 3rd-party-products.former-names = NO */}
+
+This guide lists the fields in the `TeleportGiteaConnectorV1`
+resource, which you can apply after installing the Teleport Kubernetes operator.
+
+
+## resources.teleport.dev/v1
+
+**apiVersion:** resources.teleport.dev/v1
+
+|Field|Type|Description|
+|---|---|---|
+|apiVersion|string|APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources|
+|kind|string|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
+|metadata|object||
+|spec|[object](#spec)|GiteaConnector resource definition v1 from Teleport|
+
+### spec
+
+|Field|Type|Description|
+|---|---|---|
+|api_endpoint_url|string|api_endpoint_url is the base URL of the Gitea REST API. It defaults to endpoint_url followed by /api/v1.|
+|client_id|string|client_id is the client ID of the OAuth2 application registered in Gitea.|
+|client_redirect_settings|[object](#specclient_redirect_settings)|client_redirect_settings defines which client redirect URLs are allowed for non-browser SSO logins other than the standard localhost ones.|
+|client_secret|string|client_secret is the client secret of the OAuth2 application registered in Gitea. It is never returned to clients unless secrets were explicitly requested. This field supports secret lookup. See the operator documentation for more details.|
+|display|string|display is the connector display name shown on the login screen.|
+|endpoint_url|string|endpoint_url is the base URL of the Gitea instance, for example https://gitea.example.com. OAuth2 endpoints are resolved relative to it.|
+|redirect_url|string|redirect_url is the authorization callback URL registered with the OAuth2 application, typically https://<proxy>/v1/webapi/gitea/callback.|
+|teams_to_roles|[][object](#specteams_to_roles-items)|teams_to_roles maps Gitea organization team memberships onto Teleport roles.|
+|user_matchers|[]string|user_matchers is a set of glob patterns to narrow down which username(s) this auth connector should match for identifier-first login.|
+
+### spec.client_redirect_settings
+
+|Field|Type|Description|
+|---|---|---|
+|allowed_https_hostnames|[]string|allowed_https_hostnames is a list of hostnames allowed for HTTPS client redirect URLs. Each entry can be either a plain hostname or a glob pattern.|
+|insecure_allowed_cidr_ranges|[]string|insecure_allowed_cidr_ranges is a list of CIDRs allowed for HTTP or HTTPS client redirect URLs.|
+
+### spec.teams_to_roles items
+
+|Field|Type|Description|
+|---|---|---|
+|organization|string|organization is the name of the Gitea organization the team belongs to.|
+|roles|[]string|roles is the list of Teleport roles granted to members of the team.|
+|team|string|team is the name of the team inside the organization. Gitea teams have no slug, so the exact team name is matched.|
+

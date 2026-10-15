@@ -56,7 +56,7 @@ func (cmd *SSOConfigureCommand) Initialize(app *kingpin.Application, flags *tctl
 
 	sso := app.Command("sso", "A family of commands for configuring and testing auth connectors (SSO).")
 	cmd.ConfigureCmd = sso.Command("configure", "Create auth connector configuration.")
-	cmd.AuthCommands = []*AuthKindCommand{addGithubCommand(cmd), addSAMLCommand(cmd), addOIDCCommand(cmd)}
+	cmd.AuthCommands = []*AuthKindCommand{addGithubCommand(cmd), addGiteaCommand(cmd), addSAMLCommand(cmd), addOIDCCommand(cmd)}
 }
 
 // TryRun is executed after the CLI parsing is done. The command must

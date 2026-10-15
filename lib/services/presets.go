@@ -857,6 +857,7 @@ func NewPresetTerraformProviderRole() types.Role {
 					types.NewRule(types.KindDatabase, RW()),
 					types.NewRule(types.KindDevice, RW()),
 					types.NewRule(types.KindDiscoveryConfig, RW()),
+					types.NewRule(types.KindGitea, RW()),
 					types.NewRule(types.KindGithub, RW()),
 					types.NewRule(types.KindKubernetesCluster, RW()),
 					types.NewRule(types.KindLock, RW()),

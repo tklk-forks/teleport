@@ -55,15 +55,20 @@ func TestValidateGiteaConnector(t *testing.T) {
 		require.NoError(t, ValidateGiteaConnector(c))
 		require.Equal(t, types.KindGitea, c.GetKind())
 		require.Equal(t, types.V1, c.GetVersion())
-		require.Equal(t, "https://gitea.example.com", c.GetSpec().GetEndpointUrl(), "trailing slash is trimmed")
-		require.Equal(t, "https://gitea.example.com/api/v1", c.GetSpec().GetApiEndpointUrl(), "API endpoint defaults to endpoint + /api/v1")
+		// The spec is never rewritten.
+		require.Equal(t, "https://gitea.example.com/", c.GetSpec().GetEndpointUrl())
+		require.Empty(t, c.GetSpec().GetApiEndpointUrl())
+		// Effective URLs are derived at use time.
+		require.Equal(t, "https://gitea.example.com", GiteaEndpointURL(c.GetSpec()))
+		require.Equal(t, "https://gitea.example.com/api/v1", GiteaAPIEndpointURL(c.GetSpec()))
 	})
 
-	t.Run("explicit api endpoint is kept", func(t *testing.T) {
+	t.Run("explicit api endpoint is used", func(t *testing.T) {
 		c := validGiteaConnector()
 		c.GetSpec().SetApiEndpointUrl("https://api.gitea.example.com/api/v1/")
 		require.NoError(t, ValidateGiteaConnector(c))
-		require.Equal(t, "https://api.gitea.example.com/api/v1", c.GetSpec().GetApiEndpointUrl())
+		require.Equal(t, "https://api.gitea.example.com/api/v1/", c.GetSpec().GetApiEndpointUrl())
+		require.Equal(t, "https://api.gitea.example.com/api/v1", GiteaAPIEndpointURL(c.GetSpec()))
 	})
 
 	for name, mutate := range map[string]func(c *giteaconnectorv1.GiteaConnector){
@@ -175,7 +180,7 @@ func TestGiteaConnectorMarshalRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, c.GetMetadata().GetName(), out.GetMetadata().GetName())
 	require.Equal(t, c.GetSpec().GetClientSecret(), out.GetSpec().GetClientSecret())
-	require.Equal(t, c.GetSpec().GetApiEndpointUrl(), out.GetSpec().GetApiEndpointUrl())
+	require.Equal(t, c.GetSpec().GetEndpointUrl(), out.GetSpec().GetEndpointUrl())
 	require.Len(t, out.GetSpec().GetTeamsToRoles(), 1)
 
 	_, err = UnmarshalGiteaConnector([]byte(`{"kind":"gitea","version":"v1","metadata":{"name":"x"},"spec":{"bogus":1}}`), DisallowUnknown())

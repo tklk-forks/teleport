@@ -6596,6 +6596,7 @@ func NewGRPCServer(cfg GRPCServerConfig) (*GRPCServer, error) {
 	giteaConnectorService, err := giteav1.NewService(giteav1.ServiceConfig{
 		Authorizer: cfg.Authorizer,
 		Backend:    cfg.AuthServer.Services,
+		Reader:     cfg.AuthServer.Cache,
 		AuthServer: cfg.AuthServer,
 		Emitter:    cfg.Emitter,
 		Logger:     cfg.AuthServer.logger,

@@ -129,20 +129,17 @@ func ValidateGiteaConnector(c *giteaconnectorv1.GiteaConnector) error {
 		return trace.BadParameter("gitea connector %q: invalid redirect_url: %v", name, err)
 	}
 
-	endpoint, err := parseGiteaURL(spec.GetEndpointUrl())
-	if err != nil {
+	// The spec is validated but never rewritten, so that declarative tools
+	// such as Terraform see exactly what they wrote. Normalized URLs are
+	// derived where they are used, see GiteaEndpointURL and
+	// GiteaAPIEndpointURL.
+	if _, err := parseGiteaURL(spec.GetEndpointUrl()); err != nil {
 		return trace.BadParameter("gitea connector %q: invalid endpoint_url: %v", name, err)
 	}
-	spec.SetEndpointUrl(endpoint)
-
-	if spec.GetApiEndpointUrl() == "" {
-		spec.SetApiEndpointUrl(endpoint + GiteaAPIPathSuffix)
-	} else {
-		apiEndpoint, err := parseGiteaURL(spec.GetApiEndpointUrl())
-		if err != nil {
+	if spec.GetApiEndpointUrl() != "" {
+		if _, err := parseGiteaURL(spec.GetApiEndpointUrl()); err != nil {
 			return trace.BadParameter("gitea connector %q: invalid api_endpoint_url: %v", name, err)
 		}
-		spec.SetApiEndpointUrl(apiEndpoint)
 	}
 
 	if len(spec.GetTeamsToRoles()) == 0 {
@@ -179,6 +176,21 @@ func parseGiteaURL(raw string) (string, error) {
 		return "", trace.BadParameter("URL %q is missing a host", raw)
 	}
 	return strings.TrimRight(raw, "/"), nil
+}
+
+// GiteaEndpointURL returns the connector's Gitea base URL without a trailing
+// slash.
+func GiteaEndpointURL(spec *giteaconnectorv1.GiteaConnectorSpec) string {
+	return strings.TrimRight(spec.GetEndpointUrl(), "/")
+}
+
+// GiteaAPIEndpointURL returns the connector's Gitea REST API URL without a
+// trailing slash. It defaults to the endpoint URL followed by /api/v1.
+func GiteaAPIEndpointURL(spec *giteaconnectorv1.GiteaConnectorSpec) string {
+	if api := strings.TrimRight(spec.GetApiEndpointUrl(), "/"); api != "" {
+		return api
+	}
+	return GiteaEndpointURL(spec) + GiteaAPIPathSuffix
 }
 
 // GiteaConnectorWithoutSecrets returns a copy of the connector with the

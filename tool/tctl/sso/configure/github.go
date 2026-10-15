@@ -100,7 +100,7 @@ Examples:
 }
 
 func ghRunFunc(ctx context.Context, cmd *SSOConfigureCommand, spec *types.GithubConnectorSpecV3, flags *ghExtraFlags, clt *authclient.Client) error {
-	if err := specCheckRoles(ctx, cmd.Logger, spec, flags.ignoreMissingRoles, clt); err != nil {
+	if err := specCheckRoles(ctx, cmd.Logger, spec.TeamsToRoles, flags.ignoreMissingRoles, clt); err != nil {
 		return trace.Wrap(err)
 	}
 
@@ -146,7 +146,9 @@ func ResolveCallbackURL(ctx context.Context, logger *slog.Logger, clt *authclien
 	return callbackURL
 }
 
-func specCheckRoles(ctx context.Context, logger *slog.Logger, spec *types.GithubConnectorSpecV3, ignoreMissingRoles bool, clt *authclient.Client) error {
+// specCheckRoles verifies that every role referenced by the team mappings
+// exists, logging instead of failing when ignoreMissingRoles is set.
+func specCheckRoles(ctx context.Context, logger *slog.Logger, mappings []types.TeamRolesMapping, ignoreMissingRoles bool, clt *authclient.Client) error {
 	allRoles, err := clt.GetRoles(ctx)
 	if err != nil {
 		logger.WarnContext(ctx, "Unable to get roles list, skipping teams-to-roles sanity checks", "error", err)
@@ -160,7 +162,7 @@ func specCheckRoles(ctx context.Context, logger *slog.Logger, spec *types.Github
 		roleNames = append(roleNames, role.GetName())
 	}
 
-	for _, mapping := range spec.TeamsToRoles {
+	for _, mapping := range mappings {
 		for _, role := range mapping.Roles {
 			_, found := roleMap[role]
 			if !found {

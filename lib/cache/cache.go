@@ -188,6 +188,7 @@ func ForAuth(cfg Config) Config {
 		{Kind: types.KindInstaller},
 		{Kind: types.KindKubernetesCluster, ScopeFilter: allScopes, LoadSecrets: true},
 		{Kind: types.KindCrownJewel},
+		{Kind: types.KindGitea, LoadSecrets: true},
 		{Kind: types.KindSAMLIdPServiceProvider},
 		{Kind: types.KindUserGroup},
 		{Kind: types.KindOktaImportRule},
@@ -736,6 +737,8 @@ type Config struct {
 	Kubernetes services.Kubernetes
 	// CrownJewels is a CrownJewels service.
 	CrownJewels services.CrownJewels
+	// GiteaConnectors is a Gitea connector service.
+	GiteaConnectors services.GiteaConnectorsGetter
 	// DatabaseServices is a DatabaseService service.
 	DatabaseServices services.DatabaseServices
 	// Databases is a databases service.

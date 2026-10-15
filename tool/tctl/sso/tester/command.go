@@ -89,12 +89,14 @@ Examples:
 
 	cmd.Handlers = map[string]func(c *authclient.Client, connBytes []byte) (*AuthRequestInfo, error){
 		types.KindGithubConnector: handleGithubConnector,
+		types.KindGitea:           handleGiteaConnector,
 		types.KindSAMLConnector:   handleSAMLConnector,
 		types.KindOIDCConnector:   handleOIDCConnector,
 	}
 
 	cmd.GetDiagInfoFields = map[string]func(diag *types.SSODiagnosticInfo, debug bool) []string{
 		types.KindGithubConnector: getGithubDiagInfoFields,
+		types.KindGitea:           getGiteaDiagInfoFields,
 		types.KindSAMLConnector:   getInfoFieldsSAML,
 		types.KindOIDCConnector:   getInfoFieldsOIDC,
 	}

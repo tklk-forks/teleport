@@ -155,8 +155,8 @@ func newGiteaOAuth2Config(spec *giteaconnectorv1.GiteaConnectorSpec) oauth2.Conf
 		RedirectURL:  spec.GetRedirectUrl(),
 		Scopes:       giteaScopes,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   fmt.Sprintf("%s/%s", spec.GetEndpointUrl(), giteaAuthPath),
-			TokenURL:  fmt.Sprintf("%s/%s", spec.GetEndpointUrl(), giteaTokenPath),
+			AuthURL:   fmt.Sprintf("%s/%s", services.GiteaEndpointURL(spec), giteaAuthPath),
+			TokenURL:  fmt.Sprintf("%s/%s", services.GiteaEndpointURL(spec), giteaTokenPath),
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
 	}
@@ -394,7 +394,7 @@ func (a *Server) getGiteaAPIClient(
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	return newGiteaAPIClient(spec.GetApiEndpointUrl(), token.AccessToken, httpClient)
+	return newGiteaAPIClient(services.GiteaAPIEndpointURL(spec), token.AccessToken, httpClient)
 }
 
 func (a *Server) getGiteaUserAndTeams(

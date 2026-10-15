@@ -18,7 +18,7 @@
 // 	protoc        (unknown)
 // source: teleport/giteaconnector/v1/giteaconnector.proto
 
-//go:build teleport_protohybrid
+//go:build !teleport_protoopaque
 
 package giteaconnectorv1
 

@@ -92,6 +92,7 @@ PROTOS = \
 	teleport/legacy/types/types.proto \
 	teleport/machineid/v1/bot.proto \
 	teleport/workloadidentity/v1/resource.proto \
+	teleport/giteaconnector/v1/giteaconnector.proto \
 	teleport/autoupdate/v1/autoupdate.proto \
 	teleport/summarizer/v1/summarizer.proto \
 	teleport/accessmonitoringrules/v1/access_monitoring_rules.proto \

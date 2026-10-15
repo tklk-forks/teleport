@@ -164,6 +164,7 @@ export const resourceIconSpecs = {
   gemini: forAllThemes(i.gemini),
   git: { dark: i.gitDark, light: i.gitLight },
   github: { dark: i.githubDark, light: i.githubLight },
+  gitea: forAllThemes(i.gitea),
   gitlab: forAllThemes(i.gitlab),
   glean: { dark: i.gleanDark, light: i.gleanLight },
   gmail: forAllThemes(i.gmail),

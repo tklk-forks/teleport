@@ -237,6 +237,12 @@ func generateSchema(file *File, groupName string, format crdFormatFunc, resp *go
 			},
 		},
 		{
+			name: "GiteaConnector",
+			opts: []resourceSchemaOption{
+				withVersionOverride(types.V1),
+			},
+		},
+		{
 			name: "AutoUpdateConfig",
 			opts: []resourceSchemaOption{
 				withVersionOverride(types.V1),

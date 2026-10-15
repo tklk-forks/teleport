@@ -762,6 +762,7 @@ func TestAddRoleDefaults(t *testing.T) {
 							},
 							// The missing resources got added as individual rules
 							types.NewRule(types.KindDiscoveryConfig, RW()),
+							types.NewRule(types.KindGitea, RW()),
 							types.NewRule(types.KindKubernetesCluster, RW()),
 							types.NewRule(types.KindAccessMonitoringRule, RW()),
 							types.NewRule(types.KindDynamicWindowsDesktop, RW()),

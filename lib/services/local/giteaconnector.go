@@ -20,10 +20,12 @@ package local
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gravitational/trace"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	apidefaults "github.com/gravitational/teleport/api/defaults"
 	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/backend"
@@ -46,7 +48,7 @@ func NewGiteaConnectorService(b backend.Backend) (*GiteaConnectorService, error)
 		generic.ServiceConfig[*giteaconnectorv1.GiteaConnector]{
 			Backend:       b,
 			ResourceKind:  types.KindGitea,
-			BackendPrefix: backend.NewKey(webPrefix, connectorsPrefix, giteaPrefix, connectorsPrefix),
+			BackendPrefix: giteaConnectorsKey(),
 			MarshalFunc:   services.MarshalGiteaConnector,
 			UnmarshalFunc: services.UnmarshalGiteaConnector,
 			ValidateFunc:  services.ValidateGiteaConnector,
@@ -156,4 +158,54 @@ func (s *GiteaConnectorService) GetGiteaAuthRequest(ctx context.Context, stateTo
 		return nil, trace.Wrap(err)
 	}
 	return req, nil
+}
+
+func giteaConnectorsKey() backend.Key {
+	return backend.NewKey(webPrefix, connectorsPrefix, giteaPrefix, connectorsPrefix)
+}
+
+func newGiteaConnectorParser(loadSecrets bool) *giteaConnectorParser {
+	return &giteaConnectorParser{
+		baseParser:  newBaseParser(giteaConnectorsKey()),
+		loadSecrets: loadSecrets,
+	}
+}
+
+// giteaConnectorParser converts backend events for Gitea connectors into
+// resources. Client secrets are stripped unless the watcher asked for them.
+type giteaConnectorParser struct {
+	baseParser
+	loadSecrets bool
+}
+
+func (p *giteaConnectorParser) parse(event backend.Event) (types.Resource, error) {
+	switch event.Type {
+	case types.OpDelete:
+		name := strings.TrimPrefix(event.Item.Key.TrimPrefix(giteaConnectorsKey()).String(), backend.SeparatorString)
+		if name == "" {
+			return nil, trace.NotFound("failed parsing %v", event.Item.Key.String())
+		}
+		return &types.ResourceHeader{
+			Kind:    types.KindGitea,
+			Version: types.V1,
+			Metadata: types.Metadata{
+				Name:      name,
+				Namespace: apidefaults.Namespace,
+			},
+		}, nil
+	case types.OpPut:
+		connector, err := services.UnmarshalGiteaConnector(event.Item.Value,
+			services.WithExpires(event.Item.Expires),
+			services.WithRevision(event.Item.Revision),
+		)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		if !p.loadSecrets {
+			connector = services.GiteaConnectorWithoutSecrets(connector)
+		}
+		return types.ProtoResource153ToLegacy(connector), nil
+	default:
+		return nil, trace.BadParameter("event %v is not supported", event.Type)
+	}
 }

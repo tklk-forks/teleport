@@ -184,6 +184,8 @@ func defaultHybridFromPrefix(prefix string) bool {
 		"api/gen/proto/go/teleport/embedding/v1/embedding",
 		"api/gen/proto/go/teleport/externalauditstorage/v1/externalauditstorage_service",
 		"api/gen/proto/go/teleport/externalauditstorage/v1/externalauditstorage",
+		"api/gen/proto/go/teleport/giteaconnector/v1/giteaconnector_service",
+		"api/gen/proto/go/teleport/giteaconnector/v1/giteaconnector",
 		"api/gen/proto/go/teleport/gitserver/v1/git_server_service",
 		"api/gen/proto/go/teleport/grpcclientconfig/v1/grpcclientconfig",
 		"api/gen/proto/go/teleport/grpcclientconfig/v1/grpcclientconfigservice",

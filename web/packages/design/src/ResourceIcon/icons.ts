@@ -177,6 +177,7 @@ export { default as gitDark } from './assets/git-dark.svg?no-inline';
 export { default as gitLight } from './assets/git-light.svg?no-inline';
 export { default as githubDark } from './assets/github-dark.svg?no-inline';
 export { default as githubLight } from './assets/github-light.svg?no-inline';
+export { default as gitea } from './assets/gitea.svg?no-inline';
 export { default as gitlab } from './assets/gitlab.svg?no-inline';
 export { default as gleanDark } from './assets/glean-dark.svg?no-inline';
 export { default as gleanLight } from './assets/glean-light.svg?no-inline';

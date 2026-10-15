@@ -24,6 +24,7 @@ import (
 	clusterconfigpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/clusterconfig/v1"
 	crownjewelv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/crownjewel/v1"
 	dbobjectv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/dbobject/v1"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	healthcheckconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1"
 	identitycenterv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/identitycenter/v1"
 	kubewaitingcontainerpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/kubewaitingcontainer/v1"
@@ -102,6 +103,10 @@ func EventToGRPC(in types.Event) (*proto.Event, error) {
 	case types.Resource153UnwrapperT[*beamsv1.BeamsConfig]:
 		out.Resource = &proto.Event_BeamsConfig{
 			BeamsConfig: r.UnwrapT(),
+		}
+	case types.Resource153UnwrapperT[*giteaconnectorv1.GiteaConnector]:
+		out.Resource = &proto.Event_GiteaConnector{
+			GiteaConnector: r.UnwrapT(),
 		}
 	case types.Resource153UnwrapperT[*machineidv1.BotInstance]:
 		out.Resource = &proto.Event_BotInstance{
@@ -667,6 +672,9 @@ func EventFromGRPC(in *proto.Event) (*types.Event, error) {
 		out.Resource = types.Resource153ToLegacy(r)
 		return &out, nil
 	} else if r := in.GetBeamsConfig(); r != nil {
+		out.Resource = types.ProtoResource153ToLegacy(r)
+		return &out, nil
+	} else if r := in.GetGiteaConnector(); r != nil {
 		out.Resource = types.ProtoResource153ToLegacy(r)
 		return &out, nil
 	} else if r := in.GetBotInstance(); r != nil {

@@ -80,6 +80,7 @@ type Config struct {
 	ClusterConfig           services.ClusterConfiguration
 	StaticScopedToken       services.StaticScopedTokenService
 	CrownJewels             services.CrownJewels
+	GiteaConnectors         services.GiteaConnectorsGetter
 	DatabaseObjects         services.DatabaseObjects
 	DatabaseServices        services.DatabaseServices
 	Databases               services.Databases
@@ -173,6 +174,7 @@ func NewCache(cfg Config) (*cache.Cache, error) {
 		StaticScopedToken:       cfg.StaticScopedToken,
 		AutoUpdateService:       cfg.AutoUpdateService,
 		CrownJewels:             cfg.CrownJewels,
+		GiteaConnectors:         cfg.GiteaConnectors,
 		DatabaseObjects:         cfg.DatabaseObjects,
 		DatabaseServices:        cfg.DatabaseServices,
 		Databases:               cfg.Databases,

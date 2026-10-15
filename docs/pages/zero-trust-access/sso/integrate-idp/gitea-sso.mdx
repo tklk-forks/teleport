@@ -95,6 +95,25 @@ spec:
         - access
 ```
 
+Alternatively, generate the same resource with `tctl`. The command fills in
+the redirect URL from your Proxy Service's public address:
+
+```code
+$ tctl sso configure gitea \
+  --endpoint-url=https://<Var name="gitea.example.com"/> \
+  --id=<Var name="client-id"/> \
+  --secret=<Var name="client-secret"/> \
+  -r <Var name="infra"/>,<Var name="Owners"/>,access,editor > gitea.yaml
+```
+
+Before enabling the connector, you can test it end to end without creating
+any users. `tctl sso test` opens a browser, runs the full login flow, and prints
+the claims Gitea returned and the roles they map to:
+
+```code
+$ tctl sso test gitea.yaml
+```
+
 Create the connector:
 
 ```code
@@ -103,6 +122,12 @@ authentication connector "gitea" has been created
 ```
 
 To update an existing connector, run `tctl create -f gitea.yaml --force`.
+
+The connector can also be managed with the `teleport_gitea_connector`
+[Terraform resource](../../../reference/infrastructure-as-code/terraform-provider/resources/gitea_connector.mdx)
+or the `TeleportGiteaConnectorV1`
+[Kubernetes operator resource](../../../reference/infrastructure-as-code/operator-resources/resources-teleport-dev-giteaconnectorsv1.mdx).
+With the operator, `client_secret` can reference a Kubernetes secret.
 
 The connector grants the following traits to users, which can be used in role
 templates and login rules:

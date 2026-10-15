@@ -49,6 +49,7 @@ import (
 	clusterconfigpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/clusterconfig/v1"
 	crownjewelv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/crownjewel/v1"
 	dbobjectv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/dbobject/v1"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	headerv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/header/v1"
 	healthcheckconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1"
 	identitycenterv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/identitycenter/v1"
@@ -169,6 +170,7 @@ type testPack struct {
 	notifications           *local.NotificationsService
 	accessMonitoringRules   *local.AccessMonitoringRulesService
 	crownJewels             *local.CrownJewelsService
+	giteaConnectors         *local.GiteaConnectorService
 	databaseObjects         *local.DatabaseObjectService
 	spiffeFederations       *local.SPIFFEFederationService
 	staticHostUsers         *local.StaticHostUserService
@@ -468,6 +470,12 @@ func newPackWithoutCache(dir string, opts ...packOption) (*testPack, error) {
 	}
 	p.crownJewels = crownJewelsSvc
 
+	giteaConnectorsSvc, err := local.NewGiteaConnectorService(p.backend)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	p.giteaConnectors = giteaConnectorsSvc
+
 	spiffeFederationsSvc, err := local.NewSPIFFEFederationService(p.backend)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -624,6 +632,7 @@ func newPack(t testing.TB, setupConfig func(c Config) Config, opts ...packOption
 		Notifications:           p.notifications,
 		AccessMonitoringRules:   p.accessMonitoringRules,
 		CrownJewels:             p.crownJewels,
+		GiteaConnectors:         p.giteaConnectors,
 		SPIFFEFederations:       p.spiffeFederations,
 		DatabaseObjects:         p.databaseObjects,
 		StaticHostUsers:         p.staticHostUsers,
@@ -899,6 +908,7 @@ func TestCompletenessInit(t *testing.T) {
 			Notifications:           p.notifications,
 			AccessMonitoringRules:   p.accessMonitoringRules,
 			CrownJewels:             p.crownJewels,
+			GiteaConnectors:         p.giteaConnectors,
 			DatabaseObjects:         p.databaseObjects,
 			SPIFFEFederations:       p.spiffeFederations,
 			StaticHostUsers:         p.staticHostUsers,
@@ -993,6 +1003,7 @@ func TestCompletenessReset(t *testing.T) {
 		Notifications:           p.notifications,
 		AccessMonitoringRules:   p.accessMonitoringRules,
 		CrownJewels:             p.crownJewels,
+		GiteaConnectors:         p.giteaConnectors,
 		DatabaseObjects:         p.databaseObjects,
 		SPIFFEFederations:       p.spiffeFederations,
 		StaticHostUsers:         p.staticHostUsers,
@@ -1162,6 +1173,7 @@ func TestListResources_NodesTTLVariant(t *testing.T) {
 		Notifications:           p.notifications,
 		AccessMonitoringRules:   p.accessMonitoringRules,
 		CrownJewels:             p.crownJewels,
+		GiteaConnectors:         p.giteaConnectors,
 		DatabaseObjects:         p.databaseObjects,
 		SPIFFEFederations:       p.spiffeFederations,
 		StaticHostUsers:         p.staticHostUsers,
@@ -1268,6 +1280,7 @@ func initStrategy(t *testing.T) {
 		Notifications:           p.notifications,
 		AccessMonitoringRules:   p.accessMonitoringRules,
 		CrownJewels:             p.crownJewels,
+		GiteaConnectors:         p.giteaConnectors,
 		DatabaseObjects:         p.databaseObjects,
 		SPIFFEFederations:       p.spiffeFederations,
 		StaticHostUsers:         p.staticHostUsers,
@@ -2007,6 +2020,7 @@ func TestCacheWatchKindExistsInEvents(t *testing.T) {
 		types.KindGlobalNotification:                types.Resource153ToLegacy(newGlobalNotification(t, "test")),
 		types.KindAccessMonitoringRule:              types.Resource153ToLegacy(newAccessMonitoringRule(t, "test")),
 		types.KindCrownJewel:                        types.Resource153ToLegacy(newCrownJewel(t, "test")),
+		types.KindGitea:                             types.ProtoResource153ToLegacy(newGiteaConnector(t, "test")),
 		types.KindDatabaseObject:                    types.Resource153ToLegacy(newDatabaseObject(t, "test")),
 		types.KindBeam:                              types.Resource153ToLegacy(newBeamResource("some-beam", "curious-harbor", clock.Now().Add(time.Hour))),
 		types.KindBeamsConfig:                       types.ProtoResource153ToLegacy(services.DefaultBeamsConfig()),
@@ -2132,6 +2146,8 @@ func TestCacheWatchKindExistsInEvents(t *testing.T) {
 					require.Empty(t, cmp.Diff(resource.(types.Resource153UnwrapperT[*beamsv1.Beam]).UnwrapT(), uw.UnwrapT(), protocmp.Transform()))
 				case types.Resource153UnwrapperT[*beamsv1.BeamsConfig]:
 					require.Empty(t, cmp.Diff(resource.(types.Resource153UnwrapperT[*beamsv1.BeamsConfig]).UnwrapT(), uw.UnwrapT(), protocmp.Transform()))
+				case types.Resource153UnwrapperT[*giteaconnectorv1.GiteaConnector]:
+					require.Empty(t, cmp.Diff(resource.(types.Resource153UnwrapperT[*giteaconnectorv1.GiteaConnector]).UnwrapT(), uw.UnwrapT(), protocmp.Transform()))
 				case types.Resource153UnwrapperT[*mfav2.ValidatedMFAChallenge]:
 					require.Empty(t, cmp.Diff(resource.(types.Resource153UnwrapperT[*mfav2.ValidatedMFAChallenge]).UnwrapT(), uw.UnwrapT(), protocmp.Transform()))
 				default:

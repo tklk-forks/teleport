@@ -79,32 +79,8 @@ func giteaConnectorHandler() Handler {
 	}
 }
 
-type giteaConnectorGetter struct {
-	client giteaconnectorv1.GiteaConnectorServiceClient
-}
-
-func (g giteaConnectorGetter) GetGiteaConnector(ctx context.Context, name string, withSecrets bool) (*giteaconnectorv1.GiteaConnector, error) {
-	connector, err := g.client.GetGiteaConnector(ctx, giteaconnectorv1.GetGiteaConnectorRequest_builder{
-		Name:        name,
-		WithSecrets: withSecrets,
-	}.Build())
-	return connector, trace.Wrap(err)
-}
-
-func (g giteaConnectorGetter) ListGiteaConnectors(ctx context.Context, pageSize int, pageToken string, withSecrets bool) ([]*giteaconnectorv1.GiteaConnector, string, error) {
-	resp, err := g.client.ListGiteaConnectors(ctx, giteaconnectorv1.ListGiteaConnectorsRequest_builder{
-		PageSize:    int32(pageSize),
-		PageToken:   pageToken,
-		WithSecrets: withSecrets,
-	}.Build())
-	if err != nil {
-		return nil, "", trace.Wrap(err)
-	}
-	return resp.GetConnectors(), resp.GetNextPageToken(), nil
-}
-
 func getGiteaConnector(ctx context.Context, client *authclient.Client, ref services.Ref, opts GetOpts) (Collection, error) {
-	getter := giteaConnectorGetter{client: client.GiteaConnectorClient()}
+	getter := client.GiteaConnectorServiceClient()
 	if ref.Name == "" {
 		connectors, err := services.GetAllGiteaConnectors(ctx, getter, opts.WithSecrets)
 		if err != nil {
@@ -127,16 +103,16 @@ func createGiteaConnector(ctx context.Context, client *authclient.Client, raw se
 	if err := services.ValidateGiteaConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
-	clt := client.GiteaConnectorClient()
+	clt := client.GiteaConnectorServiceClient()
 	if opts.Force {
-		upserted, err := clt.UpsertGiteaConnector(ctx, giteaconnectorv1.UpsertGiteaConnectorRequest_builder{Connector: connector}.Build())
+		upserted, err := clt.UpsertGiteaConnector(ctx, connector)
 		if err != nil {
 			return trace.Wrap(err)
 		}
 		fmt.Printf("authentication connector %q has been updated\n", upserted.GetMetadata().GetName())
 		return nil
 	}
-	created, err := clt.CreateGiteaConnector(ctx, giteaconnectorv1.CreateGiteaConnectorRequest_builder{Connector: connector}.Build())
+	created, err := clt.CreateGiteaConnector(ctx, connector)
 	if err != nil {
 		if trace.IsAlreadyExists(err) {
 			return trace.AlreadyExists("authentication connector %q already exists", connector.GetMetadata().GetName())
@@ -155,7 +131,7 @@ func updateGiteaConnector(ctx context.Context, client *authclient.Client, raw se
 	if err := services.ValidateGiteaConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
-	updated, err := client.GiteaConnectorClient().UpdateGiteaConnector(ctx, giteaconnectorv1.UpdateGiteaConnectorRequest_builder{Connector: connector}.Build())
+	updated, err := client.GiteaConnectorServiceClient().UpdateGiteaConnector(ctx, connector)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -164,7 +140,7 @@ func updateGiteaConnector(ctx context.Context, client *authclient.Client, raw se
 }
 
 func deleteGiteaConnector(ctx context.Context, client *authclient.Client, ref services.Ref) error {
-	if _, err := client.GiteaConnectorClient().DeleteGiteaConnector(ctx, giteaconnectorv1.DeleteGiteaConnectorRequest_builder{Name: ref.Name}.Build()); err != nil {
+	if err := client.GiteaConnectorServiceClient().DeleteGiteaConnector(ctx, ref.Name); err != nil {
 		return trace.Wrap(err)
 	}
 	fmt.Printf("authentication connector %q has been deleted\n", ref.Name)

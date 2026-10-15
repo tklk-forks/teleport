@@ -54,6 +54,7 @@ import (
 	"github.com/gravitational/teleport/api/client/discoveryconfig"
 	"github.com/gravitational/teleport/api/client/dynamicwindows"
 	"github.com/gravitational/teleport/api/client/externalauditstorage"
+	"github.com/gravitational/teleport/api/client/giteaconnector"
 	gitserverclient "github.com/gravitational/teleport/api/client/gitserver"
 	kubewaitingcontainerclient "github.com/gravitational/teleport/api/client/kubewaitingcontainer"
 	"github.com/gravitational/teleport/api/client/linuxdesktop"
@@ -5922,6 +5923,12 @@ func (c *Client) VnetConfigClient() *vnetconfig.Client {
 // (as per the default gRPC behavior).
 func (c *Client) GiteaConnectorClient() giteaconnectorv1.GiteaConnectorServiceClient {
 	return giteaconnectorv1.NewGiteaConnectorServiceClient(c.conn)
+}
+
+// GiteaConnectorServiceClient returns a Gitea connector client with plain
+// method signatures, suitable for resource management.
+func (c *Client) GiteaConnectorServiceClient() *giteaconnector.Client {
+	return giteaconnector.NewClient(c.GiteaConnectorClient())
 }
 
 // CrownJewelServiceClient returns a CrownJewel client.

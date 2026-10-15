@@ -19,9 +19,12 @@
 package auth_test
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
+	"time"
 
+	"github.com/gravitational/trace"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -32,6 +35,7 @@ import (
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/authtest"
+	"github.com/gravitational/teleport/lib/services"
 )
 
 func TestGiteaCallbackFlow(t *testing.T) {
@@ -183,6 +187,51 @@ func TestGiteaCallbackFlow(t *testing.T) {
 		require.Equal(t, "http://127.0.0.1:1234/callback?secret_key=abc", resp.Req.ClientRedirectURL)
 	})
 
+	t.Run("sso test flow records diagnostics", func(t *testing.T) {
+		a.GiteaUserAndTeamsOverride = func() (*auth.GiteaUserResponse, []auth.GiteaTeamResponse, error) {
+			return &auth.GiteaUserResponse{Login: "carol", ID: 99}, []auth.GiteaTeamResponse{{
+				Name:         "Owners",
+				Organization: auth.GiteaOrgResponse{Name: "infra"},
+			}}, nil
+		}
+		adminClient, err := srv.NewClient(authtest.TestAdmin())
+		require.NoError(t, err)
+
+		_, sshPub, _, tlsPub := newSSHAndTLSKeyPairs(t)
+		req, err := adminClient.GiteaConnectorClient().CreateGiteaAuthRequest(ctx, giteaconnectorv1.CreateGiteaAuthRequestRequest_builder{
+			Request: giteaconnectorv1.GiteaAuthRequest_builder{
+				ConnectorId:       "-sso-test-gitea",
+				SsoTestFlow:       true,
+				ConnectorSpec:     connector.GetSpec(),
+				SshPublicKey:      sshPub,
+				TlsPublicKey:      tlsPub,
+				CertTtl:           durationpb.New(apidefaults.MinCertDuration),
+				ClientRedirectUrl: "http://127.0.0.1:1234/callback?secret_key=abc",
+			}.Build(),
+		}.Build())
+		require.NoError(t, err)
+
+		resp, err := proxyClient.ValidateGiteaAuthCallback(ctx, url.Values{
+			"code":  []string{"test-code"},
+			"state": []string{req.GetStateToken()},
+		})
+		require.NoError(t, err)
+		require.Equal(t, "carol", resp.Username)
+		require.Empty(t, resp.Cert, "the test flow must not issue certificates")
+		require.Nil(t, resp.Session)
+
+		// The test flow is a dry run: no user is created.
+		_, err = a.GetUser(ctx, "carol", false)
+		require.True(t, trace.IsNotFound(err), "unexpected error: %v", err)
+
+		diag, err := adminClient.GetSSODiagnosticInfo(ctx, types.KindGitea, req.GetStateToken())
+		require.NoError(t, err)
+		require.True(t, diag.Success)
+		require.True(t, diag.TestFlow)
+		require.Equal(t, "carol", diag.GithubClaims.Username)
+		require.Equal(t, []string{"access"}, diag.CreateUserParams.Roles)
+	})
+
 	t.Run("callback error from provider", func(t *testing.T) {
 		req := createRequest(t, true)
 		_, err := proxyClient.ValidateGiteaAuthCallback(ctx, url.Values{
@@ -196,5 +245,104 @@ func TestGiteaCallbackFlow(t *testing.T) {
 	t.Run("missing state", func(t *testing.T) {
 		_, err := proxyClient.ValidateGiteaAuthCallback(ctx, url.Values{"code": []string{"x"}})
 		require.Error(t, err)
+	})
+}
+
+func TestGiteaConnectorAuthorization(t *testing.T) {
+	srv := newTestTLSServer(t)
+	ctx := t.Context()
+	a := srv.Auth()
+
+	connector := giteaconnectorv1.GiteaConnector_builder{
+		Metadata: headerv1.Metadata_builder{Name: "gitea"}.Build(),
+		Spec: giteaconnectorv1.GiteaConnectorSpec_builder{
+			ClientId:     "id",
+			ClientSecret: "secret",
+			RedirectUrl:  "https://example.com/v1/webapi/gitea/callback",
+			EndpointUrl:  "https://gitea.example.com",
+			TeamsToRoles: []*giteaconnectorv1.GiteaTeamRolesMapping{
+				giteaconnectorv1.GiteaTeamRolesMapping_builder{
+					Organization: "infra",
+					Team:         "Owners",
+					Roles:        []string{"access"},
+				}.Build(),
+			},
+		}.Build(),
+	}.Build()
+	_, err := a.CreateGiteaConnector(ctx, connector)
+	require.NoError(t, err)
+
+	readRules := func(kind string) []types.Rule {
+		return []types.Rule{types.NewRule(kind, []string{types.VerbList, types.VerbReadNoSecrets})}
+	}
+
+	tests := []struct {
+		name    string
+		rules   []types.Rule
+		allowed bool
+	}{
+		{name: "gitea kind", rules: readRules(types.KindGitea), allowed: true},
+		{name: "auth_connector umbrella kind", rules: readRules(types.KindAuthConnector), allowed: true},
+		{name: "unrelated connector kind", rules: readRules(types.KindGithub), allowed: false},
+		{name: "no rules", rules: []types.Rule{}, allowed: false},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			username := fmt.Sprintf("user-%d", i)
+			_, _, err := authtest.CreateUserAndRole(a, username, nil, tt.rules)
+			require.NoError(t, err)
+			clt, err := srv.NewClient(authtest.TestUser(username))
+			require.NoError(t, err)
+
+			got, getErr := clt.GiteaConnectorServiceClient().GetGiteaConnector(ctx, "gitea", false)
+			list, _, listErr := clt.GiteaConnectorServiceClient().ListGiteaConnectors(ctx, 0, "", false)
+			if !tt.allowed {
+				require.True(t, trace.IsAccessDenied(getErr), "unexpected error: %v", getErr)
+				require.True(t, trace.IsAccessDenied(listErr), "unexpected error: %v", listErr)
+				return
+			}
+			require.NoError(t, getErr)
+			require.NoError(t, listErr)
+			require.Empty(t, got.GetSpec().GetClientSecret())
+			require.Len(t, list, 1)
+
+			// Reading secrets requires the read verb.
+			_, err = clt.GiteaConnectorServiceClient().GetGiteaConnector(ctx, "gitea", true)
+			require.True(t, trace.IsAccessDenied(err), "unexpected error: %v", err)
+		})
+	}
+
+	t.Run("watch", func(t *testing.T) {
+		_, _, err := authtest.CreateUserAndRole(a, "watcher", nil, []types.Rule{
+			types.NewRule(types.KindGitea, services.RW()),
+		})
+		require.NoError(t, err)
+		clt, err := srv.NewClient(authtest.TestUser("watcher"))
+		require.NoError(t, err)
+
+		watchInit := func(loadSecrets bool) error {
+			w, err := clt.NewWatcher(ctx, types.Watch{
+				Kinds: []types.WatchKind{{Kind: types.KindGitea, LoadSecrets: loadSecrets}},
+			})
+			if err != nil {
+				return err
+			}
+			defer w.Close()
+			select {
+			case event := <-w.Events():
+				if event.Type != types.OpInit {
+					return trace.BadParameter("unexpected event %v", event.Type)
+				}
+				return nil
+			case <-w.Done():
+				return w.Error()
+			case <-time.After(10 * time.Second):
+				return trace.LimitExceeded("timed out waiting for watcher")
+			}
+		}
+
+		require.NoError(t, watchInit(false))
+		err = watchInit(true)
+		require.True(t, trace.IsAccessDenied(err), "unexpected error: %v", err)
 	})
 }

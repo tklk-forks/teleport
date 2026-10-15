@@ -28,6 +28,7 @@ import (
 	clusterconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/clusterconfig/v1"
 	crownjewelv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/crownjewel/v1"
 	dbobjectv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/dbobject/v1"
+	giteaconnectorv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/giteaconnector/v1"
 	healthcheckconfigv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/healthcheckconfig/v1"
 	identitycenterv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/identitycenter/v1"
 	kubewaitingcontainerv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/kubewaitingcontainer/v1"
@@ -127,6 +128,7 @@ type collections struct {
 	accessListMembers                  *collection[*accesslist.AccessListMember, accessListMemberIndex]
 	accessListReviews                  *collection[*accesslist.Review, accessListReviewIndex]
 	crownJewels                        *collection[*crownjewelv1.CrownJewel, crownJewelIndex]
+	giteaConnectors                    *collection[*giteaconnectorv1.GiteaConnector, giteaConnectorIndex]
 	accessGraphSettings                *collection[*clusterconfigv1.AccessGraphSettings, accessGraphSettingsIndex]
 	integrations                       *collection[types.Integration, integrationIndex]
 	pluginStaticCredentials            *collection[types.PluginStaticCredentials, pluginStaticCredentialsIndex]
@@ -620,6 +622,14 @@ func setupCollections(c Config) (*collections, error) {
 
 			out.crownJewels = collect
 			out.byKind[resourceKind] = out.crownJewels
+		case types.KindGitea:
+			collect, err := newGiteaConnectorCollection(c.GiteaConnectors, watch)
+			if err != nil {
+				return nil, trace.Wrap(err)
+			}
+
+			out.giteaConnectors = collect
+			out.byKind[resourceKind] = out.giteaConnectors
 		case types.KindAccessGraphSettings:
 			collect, err := newAccessGraphSettingsCollection(c.ClusterConfig, watch)
 			if err != nil {

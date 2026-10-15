@@ -1812,7 +1812,7 @@ func getAuthSettings(ctx context.Context, authClient authclient.ClientI, m modul
 		}
 	case constants.Gitea:
 		if authPreference.GetConnectorName() != "" {
-			giteaConnector, err := giteaConnectorGetter{client: authClient.GiteaConnectorClient()}.GetGiteaConnector(ctx, authPreference.GetConnectorName(), false)
+			giteaConnector, err := authClient.GiteaConnectorServiceClient().GetGiteaConnector(ctx, authPreference.GetConnectorName(), false)
 			if err != nil {
 				return webclient.AuthenticationSettings{}, trace.Wrap(err)
 			}

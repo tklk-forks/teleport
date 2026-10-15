@@ -35,6 +35,7 @@ import (
 	"github.com/gravitational/teleport/api/client/databaseobject"
 	"github.com/gravitational/teleport/api/client/dynamicwindows"
 	"github.com/gravitational/teleport/api/client/externalauditstorage"
+	"github.com/gravitational/teleport/api/client/giteaconnector"
 	"github.com/gravitational/teleport/api/client/gitserver"
 	"github.com/gravitational/teleport/api/client/linuxdesktop"
 	"github.com/gravitational/teleport/api/client/proto"
@@ -1930,6 +1931,10 @@ type ClientI interface {
 
 	// GiteaConnectorClient returns a Gitea connector service client.
 	GiteaConnectorClient() giteaconnectorv1.GiteaConnectorServiceClient
+
+	// GiteaConnectorServiceClient returns a Gitea connector client with plain
+	// method signatures.
+	GiteaConnectorServiceClient() *giteaconnector.Client
 
 	// ValidateGiteaAuthCallback validates a Gitea auth callback.
 	ValidateGiteaAuthCallback(ctx context.Context, q url.Values) (*GiteaAuthResponse, error)

@@ -19,6 +19,7 @@
 export type SSOType =
   | 'microsoft'
   | 'github'
+  | 'gitea'
   | 'bitbucket'
   | 'google'
   | 'openid'

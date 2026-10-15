@@ -39,6 +39,7 @@ func DataSourceTypes() map[string]tfsdk.DataSourceType {
 		//   definition.
 		"teleport_workload_cluster":      dataSourceTeleportWorkloadClusterType{},
 		"teleport_client_ip_restriction": dataSourceTeleportClientIPRestrictionType{},
+		"teleport_gitea_connector":       dataSourceTeleportGiteaConnectorType{},
 	}
 }
 
@@ -61,5 +62,6 @@ func ResourceTypes() map[string]tfsdk.ResourceType {
 		"teleport_retrieval_model":            resourceTeleportRetrievalModelType{},
 		"teleport_workload_cluster":           resourceTeleportWorkloadClusterType{},
 		"teleport_client_ip_restriction":      resourceTeleportClientIPRestrictionType{},
+		"teleport_gitea_connector":            resourceTeleportGiteaConnectorType{},
 	}
 }

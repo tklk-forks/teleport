@@ -198,6 +198,8 @@ func (e *EventsService) NewWatcher(ctx context.Context, watch types.Watch) (type
 			parser = newKubeClusterParser(kind.LoadSecrets)
 		case types.KindCrownJewel:
 			parser = newCrownJewelParser()
+		case types.KindGitea:
+			parser = newGiteaConnectorParser(kind.LoadSecrets)
 		case types.KindPlugin:
 			parser = newPluginParser(kind.LoadSecrets)
 		case types.KindSAMLConnector:

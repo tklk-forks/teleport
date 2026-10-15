@@ -2700,6 +2700,30 @@ Arguments:
 |---|---|---|
 |token|*no default* (optional)|Token to delete|
 
+## tctl sso configure gitea
+
+Configure Gitea auth connector.
+
+Usage:
+
+```code
+$ tctl sso configure gitea --teams-to-roles=org,team,role1,role2,... --id=ID --secret=SECRET --endpoint-url=URL [<flags>]
+```
+
+Flags:
+
+|Flag|Default|Description|
+|---|---|---|
+|`--api-endpoint-url`|*no default*|Gitea REST API URL. Defaults to the endpoint URL followed by /api/v1.|
+|`--display`|*no default*|Sets the connector display name.|
+|`--endpoint-url`|*no default*|Base URL of the Gitea instance, e.g. https://gitea.example.com.|
+|`--id`|*no default*|Gitea OAuth2 application client ID.|
+|`-n`, `--name`|`gitea`|Connector name.|
+|`--[no-]ignore-missing-roles`|`false`|Ignore missing roles referenced in --teams-to-roles.|
+|`--redirect-url`|*no default*|Authorization callback URL.|
+|`-r`, `--teams-to-roles`|*no default*|Sets teams-to-roles mapping using format 'organization,team,role1,role2,...'. Gitea team names are matched exactly. Repeatable.|
+|`--secret`|*no default*|Gitea OAuth2 application client secret.|
+
 ## tctl sso configure github
 
 Configure GitHub auth connector.
