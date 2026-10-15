@@ -11,7 +11,8 @@ LOG="build/agpl-make.log"
 mkdir -p build
 
 # The '$(...)' references are expanded by make, not by the shell.
-make OS=linux ARCH=amd64 \
+# FIDO2=dynamic links tsh and tctl against libfido2 for hardware security keys.
+make OS=linux ARCH=amd64 FIDO2=dynamic \
   TELEPORT_LDFLAGS="-ldflags '\$(GO_LDFLAGS) $STAMP'" \
   TOOLS_LDFLAGS="-ldflags '\$(GO_LDFLAGS) \$(KUBECTL_SETVERSION) $STAMP'" \
   build/teleport build/tctl build/tsh build/tbot 2>&1 | tee "$LOG"
@@ -28,3 +29,15 @@ for bin in teleport tctl tsh tbot; do
   fi
 done
 echo "All binaries built with build type $BUILD_TYPE."
+
+# Smoke test: every binary runs and reports the version being built.
+VERSION="$(make --no-print-directory -s print-version)"
+HOME="$(mktemp -d)"
+export HOME
+for bin in teleport tctl tsh tbot; do
+  if ! "build/$bin" version | grep -qF "$VERSION"; then
+    echo "build/$bin version does not report $VERSION" >&2
+    exit 1
+  fi
+done
+echo "All binaries run and report version $VERSION."

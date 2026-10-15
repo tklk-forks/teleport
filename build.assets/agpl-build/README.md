@@ -4,7 +4,8 @@
 
 - **Server:** a `linux/amd64` container image running `teleport`, built with
   the repository Makefile inside Docker. It includes the Web UI, PAM, enhanced
-  session recording (BPF) and Windows desktop (RDP) support.
+  session recording (BPF) and Windows desktop (RDP) support. The image's `tsh`
+  and `tctl` support hardware security keys through libfido2.
 - **Clients:** `tsh`, `tctl` and `tbot` for Linux, macOS and Windows,
   cross-compiled with [xgo](https://github.com/techknowlogick/xgo). macOS and
   Windows builds need cgo, which xgo provides. The clients need no Rust.
