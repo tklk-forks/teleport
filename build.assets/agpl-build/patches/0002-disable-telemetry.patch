@@ -1,0 +1,55 @@
+diff --git a/lib/auth/auth.go b/lib/auth/auth.go
+index 07217941..cb174197 100644
+--- a/lib/auth/auth.go
++++ b/lib/auth/auth.go
+@@ -428,9 +428,9 @@ func NewServer(cfg *InitConfig, opts ...ServerOption) (as *Server, err error) {
+ 	if cfg.TraceClient == nil {
+ 		cfg.TraceClient = tracing.NewNoopClient()
+ 	}
+-	if cfg.UsageReporter == nil {
+-		cfg.UsageReporter = usagereporter.DiscardUsageReporter{}
+-	}
++	// AGPL build: usage reporting is disabled. Any configured reporter is
++	// replaced with one that discards events.
++	cfg.UsageReporter = usagereporter.DiscardUsageReporter{}
+ 	if cfg.Okta == nil {
+ 		cfg.Okta, err = local.NewOktaService(cfg.Backend, cfg.Clock)
+ 		if err != nil {
+@@ -2678,7 +2678,8 @@ func (a *Server) EmitAuditEvent(ctx context.Context, e apievents.AuditEvent) err
+ // SetUsageReporter sets the server's usage reporter. Note that this is only
+ // safe to use before server start.
+ func (a *Server) SetUsageReporter(reporter usagereporter.UsageReporter) {
+-	a.Services.UsageReporter = reporter
++	// AGPL build: usage reporting is disabled, the reporter is ignored.
++	a.Services.UsageReporter = usagereporter.DiscardUsageReporter{}
+ }
+ 
+ // GetClusterID returns the cluster ID.
+diff --git a/lib/autoupdate/agent/setup.go b/lib/autoupdate/agent/setup.go
+index 7ab91ae1..2649eb52 100644
+--- a/lib/autoupdate/agent/setup.go
++++ b/lib/autoupdate/agent/setup.go
+@@ -725,7 +725,7 @@ func (ns *Namespace) WriteTbotService(ctx context.Context, pathDir string, rev R
+ 			UnitName:             unitName,
+ 			User:                 "root",
+ 			Group:                "root",
+-			AnonymousTelemetry:   true,
++			AnonymousTelemetry:   false,
+ 			ConfigPath:           ns.tbotConfigFile,
+ 			TBotPath:             filepath.Join(pathDir, "tbot"),
+ 			DiagSocketForUpdater: filepath.Join(diagDir, teleport.DebugServiceSocketName),
+diff --git a/tool/tbot/anonymous_telemetry.go b/tool/tbot/anonymous_telemetry.go
+index b6278817..236b12d8 100644
+--- a/tool/tbot/anonymous_telemetry.go
++++ b/tool/tbot/anonymous_telemetry.go
+@@ -50,6 +50,10 @@ const (
+ type envGetter func(key string) string
+ 
+ func telemetryEnabled(envGetter envGetter) bool {
++	// AGPL build: anonymous telemetry is disabled and cannot be enabled
++	// through TELEPORT_ANONYMOUS_TELEMETRY.
++	return false
++
+ 	if val, err := strconv.ParseBool(
+ 		envGetter(anonymousTelemetryEnabledEnv),
+ 	); err == nil {

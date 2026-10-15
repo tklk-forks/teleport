@@ -1,0 +1,14 @@
+diff --git a/lib/auth/github.go b/lib/auth/github.go
+index 4dff33a3..d5a84d4e 100644
+--- a/lib/auth/github.go
++++ b/lib/auth/github.go
+@@ -270,6 +270,9 @@ type httpRequester interface {
+ // in conn and in userTeams will be checked. If client is nil a
+ // net/http.Client will be used.
+ func checkGithubOrgSSOSupport(ctx context.Context, conn types.GithubConnector, userTeams []GithubTeamResponse, buildType string, orgCache *utils.FnCache, client httpRequester) error {
++	// AGPL build: GitHub organizations that use external SSO are allowed.
++	return nil
++
+ 	if buildType == modules.BuildEnterprise {
+ 		return nil
+ 	}

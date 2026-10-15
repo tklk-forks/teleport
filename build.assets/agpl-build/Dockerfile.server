@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+#
+# Builds the Teleport server from the AGPL source staged by build.sh and
+# packages it in a linux/amd64 runtime image. Build it through build.sh,
+# which stages and patches the source used as the build context.
+
+ARG GO_VERSION
+ARG NODE_VERSION
+
+FROM --platform=linux/amd64 golang:${GO_VERSION}-bookworm AS build
+ARG NODE_VERSION
+ARG BUILD_TYPE=oss
+
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential ca-certificates curl clang libclang-dev libpam0g-dev pkg-config xz-utils \
+ && rm -rf /var/lib/apt/lists/*
+
+# Node.js, verified against the published checksums. pnpm is provided by
+# corepack at the version pinned in package.json.
+RUN set -eux; \
+    tarball="node-v${NODE_VERSION}-linux-x64.tar.xz"; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/${tarball}"; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"; \
+    grep " ${tarball}\$" SHASUMS256.txt | sha256sum -c -; \
+    tar -xJf "${tarball}" -C /usr/local --strip-components=1 --no-same-owner; \
+    rm "${tarball}" SHASUMS256.txt; \
+    corepack enable
+
+# Rust, needed for the Web UI's WebAssembly desktop client and the server's
+# Windows desktop (RDP) support. The toolchain is pinned by rust-toolchain.toml.
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+
+WORKDIR /src
+COPY rust-toolchain.toml ./
+RUN rustup toolchain install "$(awk -F'"' '/^channel/ { print $2 }' rust-toolchain.toml)" \
+      --profile minimal --target wasm32-unknown-unknown
+
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    bash build.assets/agpl-build/container-build.sh "${BUILD_TYPE}"
+
+FROM --platform=linux/amd64 debian:bookworm-slim
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates dumb-init libelf1 libpam0g \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=build /src/build/teleport /src/build/tctl /src/build/tsh /src/build/tbot /usr/local/bin/
+COPY --from=build /src/LICENSE /usr/share/doc/teleport/LICENSE
+
+# Telemetry is compiled out of this build. The variable is set as well so tbot
+# stays opted out even if run from an unpatched binary.
+ENV TELEPORT_ANONYMOUS_TELEMETRY=0
+STOPSIGNAL SIGQUIT
+ENTRYPOINT ["/usr/bin/dumb-init", "teleport", "start", "-c", "/etc/teleport/teleport.yaml"]
